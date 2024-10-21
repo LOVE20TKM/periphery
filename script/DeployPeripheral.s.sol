@@ -10,7 +10,7 @@ contract DeployPeripheral is Script {
         address launchAddress_,
         address voteAddress_,
         address joinAddress_,
-        address randomAddress_,
+        // address randomAddress_, // Removed randomAddress parameter
         address verifyAddress_,
         address mintAddress_
     ) external {
@@ -22,7 +22,6 @@ contract DeployPeripheral is Script {
             launchAddress_,
             voteAddress_,
             joinAddress_,
-            randomAddress_,
             verifyAddress_,
             mintAddress_
         );

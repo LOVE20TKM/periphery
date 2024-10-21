@@ -114,7 +114,7 @@ contract LOVE20DataViewer {
     address public launchAddress;
     address public voteAddress;
     address public joinAddress;
-    address public randomAddress;
+    // address public randomAddress; // Removed randomAddress
     address public verifyAddress;
     address public mintAddress;
 
@@ -135,14 +135,12 @@ contract LOVE20DataViewer {
         address launchAddress_,
         address voteAddress_,
         address joinAddress_,
-        address randomAddress_,
         address verifyAddress_,
         address mintAddress_
     ) external onlyInitSetter {
         launchAddress = launchAddress_;
         voteAddress = voteAddress_;
         joinAddress = joinAddress_;
-        randomAddress = randomAddress_;
         verifyAddress = verifyAddress_;
         mintAddress = mintAddress_;
     }
