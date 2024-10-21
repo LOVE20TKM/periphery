@@ -1,4 +1,8 @@
+# ------ set network ------
 network="anvil"
+# network="bsc.testnet"
+
+# ------ dont change below ------
 
 network_dir="../network/$network"
 

@@ -4,13 +4,20 @@ out/
 
 # Ignores development broadcast logs
 !/broadcast
+# anvil
 /broadcast/*/31337/
+# sepolia
+/broadcast/*/11155111/
+# bsc testnet
+/broadcast/*/97/
 /broadcast/**/dry-run/
+
+# Flattened contracts
+/flatten
 
 # Docs
 docs/
 
 # Dotenv file
 .env
-script/network/network/anvil/.account
-script/network/network/bsc.testnet/.account
+script/network/bsc.testnet/.account
