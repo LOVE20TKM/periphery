@@ -20,4 +20,4 @@ docs/
 
 # Dotenv file
 .env
-script/network/bsc.testnet/.account
+.account
