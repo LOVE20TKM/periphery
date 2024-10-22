@@ -2,9 +2,9 @@
 pragma solidity ^0.8.27;
 
 interface ILOVE20Launch {
-    function launchInfo(
+    function launches(
         address tokenAddress
-    ) external view returns (LaunchInfo memory launchInfo_);
+    ) external view returns (LaunchInfo memory);
 }
 
 interface ILOVE20Vote {
@@ -260,7 +260,7 @@ contract LOVE20DataViewer {
             LaunchInfo memory launchInfo
         )
     {
-        launchInfo = ILOVE20Launch(launchAddress).launchInfo(tokenAddress);
+        launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
         return (
             IERC20(tokenAddress).symbol(),
             IERC20(launchInfo.parentTokenAddress).symbol(),

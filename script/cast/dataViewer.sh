@@ -19,7 +19,4 @@ echo "tokenDetail"
 cast_call $dataViewerAddress "tokenDetail(address)(string,string,(address,uint256,uint256,uint256,uint256,uint256,bool,uint256,uint256,uint256))" $tokenAddress
 
 echo "tokenDetails"
-cast_call $dataViewerAddress "tokenDetails(address[])(string[],string[],(address,uint256,uint256,uint256,uint256,uint256,bool,uint256,uint256,uint256)[])" $tokenAddress
-
-
-cast_call $dataViewerAddress "tokenDetail(address)" $tokenAddress
+cast_call $dataViewerAddress "tokenDetails(address[])(string[],string[],(address,uint256,uint256,uint256,uint256,uint256,bool,uint256,uint256,uint256)[])" "[$tokenAddress]"

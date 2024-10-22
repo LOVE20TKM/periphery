@@ -12,7 +12,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
         parentTokenAddress = _parentTokenAddress;
     }
 
-    function launchInfo(
+    function launches(
         address
     ) external view override returns (LaunchInfo memory launchInfo_) {
         return
@@ -351,7 +351,6 @@ contract LOVE20DataViewerTest is Test {
             address(mockLaunch),
             address(mockVote),
             address(mockJoin),
-            // address(0xDEF), // Removed randomAddress parameter
             address(mockVerify),
             address(mockMint)
         );
@@ -373,7 +372,9 @@ contract LOVE20DataViewerTest is Test {
             1000000,
             "parentTokenFundraisingGoal should be 1000000"
         );
-        // Continue adding other assertions...
+        assertEq(info.hasEnded, false, "hasEnded should be false");
+
+        console.log(info.parentTokenAddress);
     }
 
     // Test tokenDetails function
