@@ -17,7 +17,9 @@ contract DeployPeripheral is Script {
         console.log("Deploying Peripheral...");
 
         vm.broadcast();
-        LOVE20DataViewer dataViewer = new LOVE20DataViewer(address(this));
+        LOVE20DataViewer dataViewer = new LOVE20DataViewer(msg.sender);
+
+        vm.broadcast();
         dataViewer.init(
             launchAddress_,
             voteAddress_,
