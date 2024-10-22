@@ -9,7 +9,7 @@ base_dir="../network/$network"
 source "$base_dir/.account"
 source "$base_dir/address.params"
 source "$base_dir/network.params"
-source "$base_dir/LOVE20.params"
+source "$base_dir/DataViewer.params"
 
 # ------ user defined variables ------ 
 tokenAddress=$firstTokenAddress # 1st token
@@ -46,19 +46,24 @@ cast_call() {
 echo "cast_call() loaded"
 
 check_equal(){
-    local msg=$1
-    local expected=$2
-    local actual=$3
+    local msg="$1"
+    local expected="$2"
+    local actual="$3"
 
-    # check msg, expected, actual are set
+    # check params
     if [ -z "$msg" ] || [ -z "$expected" ] || [ -z "$actual" ]; then
-        echo "Error: need 3 args: msg, expected, actual"
+        echo "Error: 3 params needed: msg, expected, actual"
+        return 1
     fi
 
-    if [ "$expected" != "$actual" ]; then
-        echo "(failed) $msg: $expected != $actual"
+    # remove double quotes
+    actual_clean=$(echo "$actual" | sed 's/^"//;s/"$//')
+
+
+    if [ "$expected" != "$actual_clean" ]; then
+        echo "(failed) $msg: $expected != $actual_clean"
     else
-        echo "  (passed) $msg: $expected == $actual"
+        echo "  (passed) $msg: $expected == $actual_clean"
     fi
 }
 echo "check_equal() loaded"
