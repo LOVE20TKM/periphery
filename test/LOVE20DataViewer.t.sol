@@ -134,6 +134,22 @@ contract MockILOVE20Mint is ILOVE20Mint {
         }
         return 0;
     }
+
+    function govRewardByAccount(
+        address,
+        uint256,
+        address
+    ) external pure override returns (uint256, uint256, uint256) {
+        return (50, 50, 50);
+    }
+
+    function govRewardMintedByAccount(
+        address,
+        uint256,
+        address
+    ) external pure override returns (uint256) {
+        return 50;
+    }
 }
 
 // Mock IERC20 interface
@@ -315,6 +331,29 @@ contract LOVE20DataViewerTest is Test {
         );
         assertEq(verified[1].score, 50, "Second score should be 50");
         assertEq(verified[1].reward, 50, "Second reward should be 50");
+    }
+
+    // Test govRewardsByAccountByRounds function
+    function testGovRewardsByAccountByRounds() public {
+        viewer.init(
+            address(mockLaunch),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
+
+        GovReward[] memory rewards = viewer.govRewardsByAccountByRounds(
+            address(mockERC20),
+            address(this),
+            1,
+            2
+        );
+
+        assertEq(rewards.length, 2, "Should return two GovReward");
+        assertEq(rewards[0].round, 1, "First round should be 1");
+        assertEq(rewards[0].minted, 50, "First minted should be 50");
+        assertEq(rewards[0].unminted, 100, "First unminted should be 100");
     }
 
     // Test verificationInfosByAction function

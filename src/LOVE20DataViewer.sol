@@ -71,6 +71,18 @@ interface ILOVE20Mint {
         uint256 actionId,
         address accountAddress
     ) external view returns (uint256);
+
+    function govRewardByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    ) external view returns (uint256 verifyReward, uint256 boostReward, uint256 burnReward);
+
+    function govRewardMintedByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    ) external view returns (uint256);
 }
 
 interface IERC20 {
@@ -93,6 +105,12 @@ struct VerifiedAddress {
     address account;
     uint256 score;
     uint256 reward;
+}
+
+struct GovReward {
+    uint256 round;
+    uint256 minted;
+    uint256 unminted;
 }
 
 struct LaunchInfo {
@@ -225,6 +243,38 @@ contract LOVE20DataViewer {
             });
         }
         return verifiedAddresses;
+    }
+
+    function govRewardsByAccountByRounds(
+        address tokenAddress,
+        address account,
+        uint256 startRound,
+        uint256 endRound
+    ) external view returns (GovReward[] memory rewards) {
+
+        require(startRound >= 0, "startRound < 0");
+        require(endRound >= 0, "endRound < 0");
+
+        uint256 minRound = startRound;
+        uint256 maxRound = endRound;
+        if (startRound > endRound) {
+            minRound = endRound;
+            maxRound = startRound;
+        }
+        rewards = new GovReward[](maxRound - minRound + 1);
+        for (uint256 i = minRound; i <= maxRound; i++) {
+            (uint256 verifyReward, uint256 boostReward, ) = ILOVE20Mint(mintAddress)
+                .govRewardByAccount(tokenAddress, i, account);
+            rewards[i - minRound] = GovReward({
+                round: i,
+                unminted: verifyReward + boostReward,
+                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(
+                    tokenAddress,
+                    i,
+                    account
+                )
+            });
+        }
     }
 
     function verificationInfosByAction(
