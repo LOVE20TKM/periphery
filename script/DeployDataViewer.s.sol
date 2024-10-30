@@ -5,7 +5,7 @@ import "../lib/forge-std/src/Script.sol";
 import {Test, console} from "../lib/forge-std/src/Test.sol";
 import {LOVE20DataViewer} from "../src/LOVE20DataViewer.sol";
 
-contract DeployPeripheral is Script {
+contract DeployDataViewer is Script {
     function run(
         address launchAddress_,
         address voteAddress_,
@@ -14,7 +14,7 @@ contract DeployPeripheral is Script {
         address verifyAddress_,
         address mintAddress_
     ) external {
-        console.log("Deploying Peripheral...");
+        console.log("Deploying DataViewer...");
 
         vm.broadcast();
         LOVE20DataViewer dataViewer = new LOVE20DataViewer(msg.sender);
@@ -28,6 +28,6 @@ contract DeployPeripheral is Script {
             mintAddress_
         );
 
-        console.log("Peripheral deployed at", address(dataViewer));
+        console.log("DataViewer deployed at", address(dataViewer));
     }
 }

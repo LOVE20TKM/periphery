@@ -1,4 +1,4 @@
-forge_script ../DeployPeripheral.s.sol:DeployPeripheral \
+forge_script ../DeployDataViewer.s.sol:DeployDataViewer \
 --sig "run(address,address,address,address,address)" \
 $launchAddress \
 $voteAddress \

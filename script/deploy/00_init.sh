@@ -1,6 +1,13 @@
 # ------ set network ------
-network="anvil"
-# network="bsc.testnet"
+network=$1
+if [ -z "$network" ] || [ ! -d "../network/$network" ]; then
+    echo -e "\033[31mError:\033[0m Network parameter is required."
+    echo -e "\nAvailable networks:"
+    for net in $(ls ../network); do
+        echo "  - $net"
+    done
+    return 1
+fi
 
 # ------ dont change below ------
 
