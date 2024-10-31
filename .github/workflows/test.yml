@@ -29,6 +29,11 @@ jobs:
         run: |
           forge --version
 
+      - name: Install lib/v2-periphery
+        run: |
+          cd lib/v2-periphery
+          yarn
+
       - name: Run Forge fmt
         run: |
           forge fmt --check
