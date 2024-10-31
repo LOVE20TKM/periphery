@@ -20,13 +20,7 @@ contract DeployDataViewer is Script {
         LOVE20DataViewer dataViewer = new LOVE20DataViewer(msg.sender);
 
         vm.broadcast();
-        dataViewer.init(
-            launchAddress_,
-            voteAddress_,
-            joinAddress_,
-            verifyAddress_,
-            mintAddress_
-        );
+        dataViewer.init(launchAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_);
 
         console.log("DataViewer deployed at", address(dataViewer));
     }

@@ -2,7 +2,7 @@
 pragma solidity ^0.6.6;
 
 import "../lib/forge-std/src/Script.sol";
-import "../lib/v2-periphery/contracts/UniswapV2Router02.sol"; 
+import "../lib/v2-periphery/contracts/UniswapV2Router02.sol";
 import {Test, console} from "../lib/forge-std/src/Test.sol";
 
 contract DeployUniswapV2 is Script {
@@ -24,10 +24,7 @@ contract DeployUniswapV2 is Script {
 
         // Paid: 0.001591183704402696 ETH (2414728 gas * 0.658949457 gwei)
         vm.broadcast();
-        uniswapV2Router02Address = deployCode(
-            "UniswapV2Router02.sol:UniswapV2Router02",
-            abi.encode(factory, WETH)
-        );
+        uniswapV2Router02Address = deployCode("UniswapV2Router02.sol:UniswapV2Router02", abi.encode(factory, WETH));
 
         console.log("uniswapV2Router02Address: ", uniswapV2Router02Address);
     }
