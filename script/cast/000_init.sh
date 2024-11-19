@@ -1,8 +1,13 @@
-#  ------ set base_dir before run this script ------ 
-network="anvil"
-# network="bsc.testnet"
-
-
+# ------ set network ------
+network=$1
+if [ -z "$network" ] || [ ! -d "../network/$network" ]; then
+    echo -e "\033[31mError:\033[0m Network parameter is required."
+    echo -e "\nAvailable networks:"
+    for net in $(ls ../network); do
+        echo "  - $net"
+    done
+    return 1
+fi
 # --------------------------------------------------
 base_dir="../network/$network"
 
