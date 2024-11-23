@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 interface ILOVE20Launch {
     function launches(address tokenAddress) external view returns (LaunchInfo memory);
+    function tokenAddressBySymbol(string memory symbol) external view returns (address);
 }
 
 interface ILOVE20Vote {
@@ -67,8 +68,12 @@ interface ILOVE20Mint {
         returns (uint256);
 }
 
-interface IERC20 {
+interface LOVE20Token {
+    function name() external view returns (string memory);
     function symbol() external view returns (string memory);
+    function decimals() external view returns (uint256);
+    function slAddress() external view returns (address);
+    function stAddress() external view returns (address);
 }
 
 struct JoinableAction {
@@ -106,6 +111,16 @@ struct LaunchInfo {
     uint256 participantCount;
     uint256 totalContributed;
     uint256 totalExtraRefunded;
+}
+
+struct TokenInfo {
+    address tokenAddress;
+    string name;
+    string symbol;
+    uint256 decimals;
+    string parentTokenSymbol;
+    address slAddress;
+    address stAddress;
 }
 
 contract LOVE20DataViewer {
@@ -232,24 +247,42 @@ contract LOVE20DataViewer {
     function tokenDetail(address tokenAddress)
         public
         view
-        returns (string memory symbol, string memory parentTokenSymbol, LaunchInfo memory launchInfo)
+        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
     {
         launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
-        return (IERC20(tokenAddress).symbol(), IERC20(launchInfo.parentTokenAddress).symbol(), launchInfo);
+        LOVE20Token love20 = LOVE20Token(tokenAddress);
+        tokenInfo = TokenInfo({
+            tokenAddress: tokenAddress,
+            name: love20.name(),
+            symbol: love20.symbol(),
+            decimals: love20.decimals(),
+            parentTokenSymbol: LOVE20Token(launchInfo.parentTokenAddress).symbol(),
+            slAddress: love20.slAddress(),
+            stAddress: love20.stAddress()
+        });
+        return (tokenInfo, launchInfo);
     }
 
     function tokenDetails(address[] memory tokenAddresses)
         external
         view
-        returns (string[] memory symbols, string[] memory parentTokenSymbols, LaunchInfo[] memory launchInfos)
+        returns (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos)
     {
-        symbols = new string[](tokenAddresses.length);
-        parentTokenSymbols = new string[](tokenAddresses.length);
+        tokenInfos = new TokenInfo[](tokenAddresses.length);
         launchInfos = new LaunchInfo[](tokenAddresses.length);
         for (uint256 i = 0; i < tokenAddresses.length; i++) {
-            (symbols[i], parentTokenSymbols[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
+            (tokenInfos[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
         }
 
-        return (symbols, parentTokenSymbols, launchInfos);
+        return (tokenInfos, launchInfos);
+    }
+
+    function tokenDetailBySymbol(string memory symbol)
+        external
+        view
+        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
+    {
+        address tokenAddress = ILOVE20Launch(launchAddress).tokenAddressBySymbol(symbol);
+        return tokenDetail(tokenAddress);
     }
 }

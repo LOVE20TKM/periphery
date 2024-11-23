@@ -26,6 +26,11 @@ contract MockILOVE20Launch is ILOVE20Launch {
             totalExtraRefunded: 50000
         });
     }
+
+    function tokenAddressBySymbol(string memory symbol) external view override returns (address) {
+        console.log("symbol@tokenAddressBySymbol", symbol);
+        return address(parentTokenAddress);
+    }
 }
 
 // Mock ILOVE20Vote interface
@@ -115,15 +120,32 @@ contract MockILOVE20Mint is ILOVE20Mint {
 }
 
 // Mock IERC20 interface
-contract MockERC20 is IERC20 {
+contract MockERC20 is LOVE20Token {
     string private _symbol;
 
     constructor(string memory symbol_) {
         _symbol = symbol_;
     }
 
+
+    function name() external pure override returns (string memory) {
+        return "TEST";
+    }
+
+    function decimals() external pure override returns (uint256) {
+        return 18;
+    }
+
     function symbol() external view override returns (string memory) {
         return _symbol;
+    }
+
+    function slAddress() external view returns (address) {
+        return address(this);
+    }
+
+    function stAddress() external view returns (address) {
+        return address(this);
     }
 }
 
@@ -256,15 +278,27 @@ contract LOVE20DataViewerTest is Test {
     function testTokenDetail() public {
         viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
-        (string memory symbol, string memory parentSymbol, LaunchInfo memory info) =
-            viewer.tokenDetail(address(mockERC20));
-        assertEq(symbol, "TEST", "symbol should be 'TEST'");
-        assertEq(parentSymbol, "TEST", "parentSymbol should be 'TEST'");
+        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetail(address(mockERC20));
+        assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
+        assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
+        assertEq(tokenInfo.decimals, 18, "decimals should be 18");
+        assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+        assertNotEq(tokenInfo.slAddress, address(0), "slAddress should not be 0");
+        assertNotEq(tokenInfo.stAddress, address(0), "stAddress should not be 0");
         assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
         assertEq(info.parentTokenFundraisingGoal, 1000000, "parentTokenFundraisingGoal should be 1000000");
         assertEq(info.hasEnded, false, "hasEnded should be false");
+    }
 
-        console.log(info.parentTokenAddress);
+    // Test tokenDetailBySymbol function
+    function testTokenDetailBySymbol() public {
+        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetailBySymbol("TEST");
+        assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
+        assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
+        assertEq(tokenInfo.decimals, 18, "decimals should be 18");
+        assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+        assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
     }
 
     // Test tokenDetails function
@@ -278,19 +312,39 @@ contract LOVE20DataViewerTest is Test {
             address(mockMint)
         );
 
-        address[] memory tokens = new address[](2);
-        tokens[0] = address(mockERC20);
-        tokens[1] = address(mockERC20);
+        address[] memory tokenAddresses = new address[](2);
+        tokenAddresses[0] = address(mockERC20);
+        tokenAddresses[1] = address(mockERC20);
 
-        (string[] memory symbols, string[] memory parentSymbols, LaunchInfo[] memory launchInfos) =
-            viewer.tokenDetails(tokens);
-        assertEq(symbols.length, 2, "Should return two symbols");
-        assertEq(parentSymbols.length, 2, "Should return two parentSymbols");
+        TokenInfo[] memory tokens = new TokenInfo[](2);
+        tokens[0] = TokenInfo({
+            tokenAddress: address(mockERC20),
+            name: "TEST",
+            symbol: "TEST",
+            decimals: 18,
+            parentTokenSymbol: "TEST",
+            slAddress: address(mockERC20),
+            stAddress: address(mockERC20)
+        });
+        tokens[1] = TokenInfo({
+            tokenAddress: address(mockERC20),
+            name: "TEST",
+            symbol: "TEST",
+            decimals: 18,
+            parentTokenSymbol: "TEST",
+            slAddress: address(mockERC20),
+            stAddress: address(mockERC20)
+        });
+
+        (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos) = viewer.tokenDetails(tokenAddresses);
+        assertEq(tokenInfos.length, 2, "Should return two tokenInfos");
         assertEq(launchInfos.length, 2, "Should return two launchInfos");
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            assertEq(symbols[i], "TEST", "symbol should be 'TEST'");
-            assertEq(parentSymbols[i], "TEST", "parentSymbol should be 'TEST'");
+            assertEq(tokenInfos[i].symbol, "TEST", "symbol should be 'TEST'");
+            assertEq(tokenInfos[i].name, "TEST", "name should be 'TEST'");
+            assertEq(tokenInfos[i].decimals, 18, "decimals should be 18");
+            assertEq(tokenInfos[i].parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
             assertEq(
                 launchInfos[i].parentTokenAddress,
                 address(mockERC20),
