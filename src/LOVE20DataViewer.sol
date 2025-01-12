@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.27;
+pragma solidity =0.8.19;
 
 interface ILOVE20Launch {
     function launches(address tokenAddress) external view returns (LaunchInfo memory);
     function tokenAddressBySymbol(string memory symbol) external view returns (address);
+    function stakeAddress() external view returns (address);
+}
+
+interface ILOVE20Stake {
+    function initialStakeRound(address tokenAddress) external view returns (uint256);
 }
 
 interface ILOVE20Vote {
@@ -121,6 +126,7 @@ struct TokenInfo {
     string parentTokenSymbol;
     address slAddress;
     address stAddress;
+    uint256 initialStakeRound;
 }
 
 contract LOVE20DataViewer {
@@ -250,6 +256,7 @@ contract LOVE20DataViewer {
         returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
     {
         launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
         LOVE20Token love20 = LOVE20Token(tokenAddress);
         tokenInfo = TokenInfo({
             tokenAddress: tokenAddress,
@@ -258,7 +265,8 @@ contract LOVE20DataViewer {
             decimals: love20.decimals(),
             parentTokenSymbol: LOVE20Token(launchInfo.parentTokenAddress).symbol(),
             slAddress: love20.slAddress(),
-            stAddress: love20.stAddress()
+            stAddress: love20.stAddress(),
+            initialStakeRound: ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress)
         });
         return (tokenInfo, launchInfo);
     }

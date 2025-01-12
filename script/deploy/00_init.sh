@@ -24,3 +24,6 @@ forge_script() {
     --broadcast \
     $([ "$network" != "anvil" ] && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
 }
+
+# 打印成功信息，并输出当前网络
+echo -e "\033[32mSuccess:\033[0m Deployed on $network"

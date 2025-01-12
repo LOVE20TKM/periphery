@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity =0.8.19;
 
 import "forge-std/Test.sol";
 import "../src/LOVE20DataViewer.sol";
@@ -7,9 +7,11 @@ import "../src/LOVE20DataViewer.sol";
 // Mock ILOVE20Launch interface
 contract MockILOVE20Launch is ILOVE20Launch {
     address public parentTokenAddress;
+    address public stakeAddress;
 
-    constructor(address _parentTokenAddress) {
+    constructor(address _parentTokenAddress, address _stakeAddress) {
         parentTokenAddress = _parentTokenAddress;
+        stakeAddress = _stakeAddress;
     }
 
     function launches(address) external view override returns (LaunchInfo memory launchInfo_) {
@@ -32,6 +34,14 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return address(parentTokenAddress);
     }
 }
+
+contract MockILOVE20Stake is ILOVE20Stake {
+    function initialStakeRound(address tokenAddress) external pure override returns (uint256) {
+        tokenAddress;
+        return 42;
+    }
+}
+
 
 // Mock ILOVE20Vote interface
 contract MockILOVE20Vote is ILOVE20Vote {
@@ -154,6 +164,7 @@ contract LOVE20DataViewerTest is Test {
     address initSetter = address(this);
 
     MockILOVE20Launch mockLaunch;
+    MockILOVE20Stake mockStake;
     MockILOVE20Vote mockVote;
     MockILOVE20Join mockJoin;
     MockILOVE20Verify mockVerify;
@@ -163,9 +174,10 @@ contract LOVE20DataViewerTest is Test {
     function setUp() public {
         // Deploy MockERC20 as parentToken
         mockERC20 = new MockERC20("TEST");
+        mockStake = new MockILOVE20Stake();
 
         // Deploy MockILOVE20Launch with mockERC20's address
-        mockLaunch = new MockILOVE20Launch(address(mockERC20));
+        mockLaunch = new MockILOVE20Launch(address(mockERC20), address(mockStake));
 
         // Deploy other mock contracts
         mockVote = new MockILOVE20Vote();
@@ -285,6 +297,7 @@ contract LOVE20DataViewerTest is Test {
         assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
         assertNotEq(tokenInfo.slAddress, address(0), "slAddress should not be 0");
         assertNotEq(tokenInfo.stAddress, address(0), "stAddress should not be 0");
+        assertEq(tokenInfo.initialStakeRound, 42, "initialStakeRound should be 42");
         assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
         assertEq(info.parentTokenFundraisingGoal, 1000000, "parentTokenFundraisingGoal should be 1000000");
         assertEq(info.hasEnded, false, "hasEnded should be false");
@@ -298,6 +311,7 @@ contract LOVE20DataViewerTest is Test {
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
         assertEq(tokenInfo.decimals, 18, "decimals should be 18");
         assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+        assertEq(tokenInfo.initialStakeRound, 42, "initialStakeRound should be 42");
         assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
     }
 
@@ -316,35 +330,16 @@ contract LOVE20DataViewerTest is Test {
         tokenAddresses[0] = address(mockERC20);
         tokenAddresses[1] = address(mockERC20);
 
-        TokenInfo[] memory tokens = new TokenInfo[](2);
-        tokens[0] = TokenInfo({
-            tokenAddress: address(mockERC20),
-            name: "TEST",
-            symbol: "TEST",
-            decimals: 18,
-            parentTokenSymbol: "TEST",
-            slAddress: address(mockERC20),
-            stAddress: address(mockERC20)
-        });
-        tokens[1] = TokenInfo({
-            tokenAddress: address(mockERC20),
-            name: "TEST",
-            symbol: "TEST",
-            decimals: 18,
-            parentTokenSymbol: "TEST",
-            slAddress: address(mockERC20),
-            stAddress: address(mockERC20)
-        });
-
         (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos) = viewer.tokenDetails(tokenAddresses);
         assertEq(tokenInfos.length, 2, "Should return two tokenInfos");
         assertEq(launchInfos.length, 2, "Should return two launchInfos");
 
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokenInfos.length; i++) {
             assertEq(tokenInfos[i].symbol, "TEST", "symbol should be 'TEST'");
             assertEq(tokenInfos[i].name, "TEST", "name should be 'TEST'");
             assertEq(tokenInfos[i].decimals, 18, "decimals should be 18");
             assertEq(tokenInfos[i].parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+            assertEq(tokenInfos[i].initialStakeRound, 42, "initialStakeRound should be 42");
             assertEq(
                 launchInfos[i].parentTokenAddress,
                 address(mockERC20),
