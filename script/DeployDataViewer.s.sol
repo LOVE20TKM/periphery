@@ -8,6 +8,7 @@ import {LOVE20DataViewer} from "../src/LOVE20DataViewer.sol";
 contract DeployDataViewer is Script {
     function run(
         address launchAddress_,
+        address submitAddress_,
         address voteAddress_,
         address joinAddress_,
         // address randomAddress_, // Removed randomAddress parameter
@@ -20,7 +21,7 @@ contract DeployDataViewer is Script {
         LOVE20DataViewer dataViewer = new LOVE20DataViewer(msg.sender);
 
         vm.broadcast();
-        dataViewer.init(launchAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_);
+        dataViewer.init(launchAddress_, submitAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_);
 
         console.log("DataViewer deployed at", address(dataViewer));
     }

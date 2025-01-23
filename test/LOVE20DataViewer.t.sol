@@ -42,6 +42,34 @@ contract MockILOVE20Stake is ILOVE20Stake {
     }
 }
 
+// Mock ILOVE20Submit interface
+contract MockILOVE20Submit is ILOVE20Submit {
+    function actionInfo(address tokenAddress, uint256 actionId) external view override returns (ActionInfo memory) {
+        string[] memory verificationKeys = new string[](2);
+        verificationKeys[0] = "twitter";
+        verificationKeys[1] = "github";
+        
+        string[] memory verificationInfoGuides = new string[](2);
+        verificationInfoGuides[0] = "Please input your twitter username";
+        verificationInfoGuides[1] = "Please input your github username";
+        
+        ActionInfo memory actionInfo_ = ActionInfo({
+            head: ActionHead({id: actionId, author: address(this), createAtBlock: block.number}),
+            body: ActionBody({
+                maxStake: 1000, 
+                maxRandomAccounts: 10, 
+                whiteList: new address[](1),
+                action: "test", 
+                consensus: "test", 
+                verificationRule: "test", 
+                verificationKeys: verificationKeys,
+                verificationInfoGuides: verificationInfoGuides
+            })
+        });
+        actionInfo_.body.whiteList[0] = tokenAddress;
+        return actionInfo_;
+    }
+}
 
 // Mock ILOVE20Vote interface
 contract MockILOVE20Vote is ILOVE20Vote {
@@ -62,21 +90,26 @@ contract MockILOVE20Vote is ILOVE20Vote {
 
 // Mock ILOVE20Join interface
 contract MockILOVE20Join is ILOVE20Join {
-    function joinedAmountByActionId(address, uint256, uint256 actionId) external pure override returns (uint256) {
+
+    address internal _submitAddress;
+    address internal _joinAddress;  
+
+    constructor(address submitAddress_, address joinAddress_) {
+        _submitAddress = submitAddress_;
+        _joinAddress = joinAddress_;
+    }
+
+    function amountByActionId(address, uint256 actionId) external pure override returns (uint256) {
         return 1000 * actionId;
     }
 
-    function stakedActionIdsByAccount(address, address) external pure override returns (uint256[] memory) {
+    function actionIdsByAccount(address, address) external pure override returns (uint256[] memory) {
         uint256[] memory actionIds = new uint256[](1);
         actionIds[0] = 1;
         return actionIds;
     }
 
-    function lastJoinedRoundByAccountByActionId(address, address, uint256) external pure override returns (uint256) {
-        return 1;
-    }
-
-    function stakedAmountByAccountByActionId(address, address, uint256 actionId)
+    function amountByActionIdByAccount(address, uint256 actionId, address)
         external
         pure
         override
@@ -85,19 +118,33 @@ contract MockILOVE20Join is ILOVE20Join {
         return 500 * actionId;
     }
 
-    function verificationInfo(address, uint256, uint256, address) external pure override returns (string memory) {
-        return "Verified Information";
-    }
-}
-
-// Mock ILOVE20Verify interface
-contract MockILOVE20Verify is ILOVE20Verify {
-    function accountsForVerify(address, uint256, uint256) external pure override returns (address[] memory) {
+    function randomAccounts(address, uint256, uint256) external pure override returns (address[] memory) {
         address[] memory accounts = new address[](2);
         accounts[0] = address(0x1);
         accounts[1] = address(0x2);
         return accounts;
     }
+
+    function verificationInfo(address, address, string memory) external pure override returns (string memory) {
+        return "Verified Information";
+    }
+
+    function verificationInfosByAccount(address tokenAddress, uint256 actionId, address account)
+        external
+        view
+        returns (string[] memory verificationInfos)
+    {
+        ActionInfo memory actionInfo = ILOVE20Submit(_submitAddress).actionInfo(tokenAddress, actionId);
+        verificationInfos = new string[](actionInfo.body.verificationKeys.length);
+        for (uint256 i = 0; i < actionInfo.body.verificationKeys.length; i++) {
+            verificationInfos[i] = ILOVE20Join(_joinAddress).verificationInfo(tokenAddress, account, actionInfo.body.verificationKeys[i]);
+        }
+        return verificationInfos;
+    }
+}
+
+// Mock ILOVE20Verify interface
+contract MockILOVE20Verify is ILOVE20Verify {
 
     function scoreByActionIdByAccount(address, uint256, uint256, address) external pure override returns (uint256) {
         return 50;
@@ -165,6 +212,7 @@ contract LOVE20DataViewerTest is Test {
 
     MockILOVE20Launch mockLaunch;
     MockILOVE20Stake mockStake;
+    MockILOVE20Submit mockSubmit;
     MockILOVE20Vote mockVote;
     MockILOVE20Join mockJoin;
     MockILOVE20Verify mockVerify;
@@ -175,13 +223,13 @@ contract LOVE20DataViewerTest is Test {
         // Deploy MockERC20 as parentToken
         mockERC20 = new MockERC20("TEST");
         mockStake = new MockILOVE20Stake();
-
+        mockSubmit = new MockILOVE20Submit();
         // Deploy MockILOVE20Launch with mockERC20's address
         mockLaunch = new MockILOVE20Launch(address(mockERC20), address(mockStake));
 
         // Deploy other mock contracts
         mockVote = new MockILOVE20Vote();
-        mockJoin = new MockILOVE20Join();
+        mockJoin = new MockILOVE20Join(address(mockSubmit), address(mockJoin));
         mockVerify = new MockILOVE20Verify();
         mockMint = new MockILOVE20Mint();
 
@@ -206,9 +254,10 @@ contract LOVE20DataViewerTest is Test {
 
     // Test init function
     function testInitFunction() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
         assertEq(viewer.launchAddress(), address(mockLaunch), "launchAddress should be set correctly");
+        assertEq(viewer.submitAddress(), address(mockSubmit), "submitAddress should be set correctly");
         assertEq(viewer.voteAddress(), address(mockVote), "voteAddress should be set correctly");
         assertEq(viewer.joinAddress(), address(mockJoin), "joinAddress should be set correctly");
         assertEq(viewer.verifyAddress(), address(mockVerify), "verifyAddress should be set correctly");
@@ -217,7 +266,7 @@ contract LOVE20DataViewerTest is Test {
 
     // Test joinableActions function
     function testJoinableActions() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
         JoinableAction[] memory actions = viewer.joinableActions(address(mockERC20), 1);
         assertEq(actions.length, 2, "Should return two JoinableActions");
@@ -231,12 +280,11 @@ contract LOVE20DataViewerTest is Test {
 
     // Test joinedActions function
     function testJoinedActions() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
         JoinedAction[] memory actions = viewer.joinedActions(address(mockERC20), address(this));
         assertEq(actions.length, 1, "Should return one JoinedAction");
         assertEq(actions[0].actionId, 1, "actionId should be 1");
-        assertEq(actions[0].lastJoinedRound, 1, "lastJoinedRound should be 1");
         assertEq(actions[0].stakedAmount, 500, "stakedAmount should be 500");
     }
 
@@ -244,9 +292,9 @@ contract LOVE20DataViewerTest is Test {
     function testVerifiedAddressesByAction() public {
         viewer.init(
             address(mockLaunch),
+            address(mockSubmit),
             address(mockVote),
             address(mockJoin),
-            // address(0xDEF), // Removed randomAddress parameter
             address(mockVerify),
             address(mockMint)
         );
@@ -263,7 +311,7 @@ contract LOVE20DataViewerTest is Test {
 
     // Test govRewardsByAccountByRounds function
     function testGovRewardsByAccountByRounds() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
         GovReward[] memory rewards = viewer.govRewardsByAccountByRounds(address(mockERC20), address(this), 1, 2);
 
@@ -275,20 +323,30 @@ contract LOVE20DataViewerTest is Test {
 
     // Test verificationInfosByAction function
     function testVerificationInfosByAction() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
-        (address[] memory accounts, string[] memory infos) = viewer.verificationInfosByAction(address(mockERC20), 1, 1);
-        assertEq(accounts.length, 2, "Should return two accounts");
-        assertEq(infos.length, 2, "Should return two infos");
-        assertEq(accounts[0], address(0x1), "First account should be 0x1");
-        assertEq(infos[0], "Verified Information", "First info should be 'Verified Information'");
-        assertEq(accounts[1], address(0x2), "Second account should be 0x2");
-        assertEq(infos[1], "Verified Information", "Second info should be 'Verified Information'");
+        VerificationInfo[] memory verificationInfos = viewer.verificationInfosByAction(address(mockERC20), 1, 1);
+        assertEq(verificationInfos.length, 2, "Should return two accounts");
+        assertEq(verificationInfos[0].account, address(0x1), "First account should be 0x1");
+        assertEq(verificationInfos[0].infos[0], "Verified Information", "First info should be 'Verified Information'");
+        assertEq(verificationInfos[1].account, address(0x2), "Second account should be 0x2");
+        assertEq(verificationInfos[1].infos[0], "Verified Information", "Second info should be 'Verified Information'");
+    }
+
+    // Test verificationInfosByAccount function
+    function testVerificationInfosByAccount() public {
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        (string[] memory verificationKeys, string[] memory verificationInfos) = viewer.verificationInfosByAccount(address(mockERC20), 1, address(0x1));
+        assertEq(verificationKeys.length, 2, "Should return two accounts");
+        assertEq(verificationKeys[0], "twitter", "First info should be 'Verified Information'");
+        assertEq(verificationKeys[1], "github", "Second info should be 'Verified Information'");
+        assertEq(verificationInfos[0], "Verified Information", "First info should be 'Verified Information'");
+        assertEq(verificationInfos[1], "Verified Information", "Second info should be 'Verified Information'");
     }
 
     // Test tokenDetail function
     function testTokenDetail() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
         (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetail(address(mockERC20));
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
@@ -305,7 +363,7 @@ contract LOVE20DataViewerTest is Test {
 
     // Test tokenDetailBySymbol function
     function testTokenDetailBySymbol() public {
-        viewer.init(address(mockLaunch), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
         (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetailBySymbol("TEST");
         assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
@@ -319,9 +377,9 @@ contract LOVE20DataViewerTest is Test {
     function testTokenDetails() public {
         viewer.init(
             address(mockLaunch),
+            address(mockSubmit),
             address(mockVote),
             address(mockJoin),
-            // address(0xDEF), // Removed randomAddress parameter
             address(mockVerify),
             address(mockMint)
         );

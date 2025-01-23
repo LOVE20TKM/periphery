@@ -11,6 +11,13 @@ interface ILOVE20Stake {
     function initialStakeRound(address tokenAddress) external view returns (uint256);
 }
 
+interface ILOVE20Submit {
+    function actionInfo(
+        address tokenAddress,
+        uint256 actionId
+    ) external view returns (ActionInfo memory);
+}
+
 interface ILOVE20Vote {
     function votesNums(address tokenAddress, uint256 round)
         external
@@ -19,34 +26,31 @@ interface ILOVE20Vote {
 }
 
 interface ILOVE20Join {
-    function joinedAmountByActionId(address tokenAddress, uint256 round, uint256 actionId)
+    function amountByActionId(address tokenAddress, uint256 actionId)
         external
         view
         returns (uint256);
 
-    function stakedActionIdsByAccount(address tokenAddress, address account) external view returns (uint256[] memory);
+    function actionIdsByAccount(address tokenAddress, address account) external view returns (uint256[] memory);
 
-    function lastJoinedRoundByAccountByActionId(address tokenAddress, address account, uint256 actionId)
+    function amountByActionIdByAccount(address tokenAddress, uint256 actionId, address account)
         external
         view
         returns (uint256);
 
-    function stakedAmountByAccountByActionId(address tokenAddress, address account, uint256 actionId)
-        external
-        view
-        returns (uint256);
-
-    function verificationInfo(address tokenAddress, uint256 round, uint256 actionId, address accountAddress)
-        external
-        view
-        returns (string memory);
-}
-
-interface ILOVE20Verify {
-    function accountsForVerify(address tokenAddress, uint256 round, uint256 actionId)
+    function randomAccounts(address tokenAddress, uint256 round, uint256 actionId)
         external
         view
         returns (address[] memory);
+
+    function verificationInfo(
+        address tokenAddress,
+        address accountAddress,
+        string memory verificationKey
+    ) external view returns (string memory);
+}
+
+interface ILOVE20Verify {
 
     function scoreByActionIdByAccount(address tokenAddress, uint256 round, uint256 actionId, address account)
         external
@@ -81,6 +85,34 @@ interface LOVE20Token {
     function stAddress() external view returns (address);
 }
 
+struct ActionHead {
+    // managed by contract
+    uint256 id;
+    address author;
+    uint256 createAtBlock;
+}
+
+struct ActionBody {
+    // max token amount for staking
+    uint256 maxStake;
+    // max random accounts for verification
+    uint256 maxRandomAccounts;
+    // contract must comply with IWhiteList. If not set, all users can join the action.
+    address[] whiteList;
+    // action info
+    string action;
+    string consensus;
+    string verificationRule;
+    // guide for inputting verification info
+    string[] verificationKeys;
+    string[] verificationInfoGuides;
+}
+
+struct ActionInfo {
+    ActionHead head;
+    ActionBody body;
+}
+
 struct JoinableAction {
     uint256 actionId;
     uint256 votesNum;
@@ -89,7 +121,6 @@ struct JoinableAction {
 
 struct JoinedAction {
     uint256 actionId;
-    uint256 lastJoinedRound;
     uint256 stakedAmount;
 }
 
@@ -129,10 +160,16 @@ struct TokenInfo {
     uint256 initialStakeRound;
 }
 
+struct VerificationInfo {
+    address account;
+    string[] infos;
+}
+
 contract LOVE20DataViewer {
     address public initSetter;
 
     address public launchAddress;
+    address public submitAddress;
     address public voteAddress;
     address public joinAddress;
     // address public randomAddress; // Removed randomAddress
@@ -154,12 +191,14 @@ contract LOVE20DataViewer {
 
     function init(
         address launchAddress_,
+        address submitAddress_,
         address voteAddress_,
         address joinAddress_,
         address verifyAddress_,
         address mintAddress_
     ) external onlyInitSetter {
         launchAddress = launchAddress_;
+        submitAddress = submitAddress_;
         voteAddress = voteAddress_;
         joinAddress = joinAddress_;
         verifyAddress = verifyAddress_;
@@ -173,22 +212,19 @@ contract LOVE20DataViewer {
             actions[i] = JoinableAction({
                 actionId: actionIds[i],
                 votesNum: votes[i],
-                joinedAmount: ILOVE20Join(joinAddress).joinedAmountByActionId(tokenAddress, round, actionIds[i])
+                joinedAmount: ILOVE20Join(joinAddress).amountByActionId(tokenAddress, actionIds[i])
             });
         }
         return actions;
     }
 
     function joinedActions(address tokenAddress, address account) external view returns (JoinedAction[] memory) {
-        uint256[] memory actionIds = ILOVE20Join(joinAddress).stakedActionIdsByAccount(tokenAddress, account);
+        uint256[] memory actionIds = ILOVE20Join(joinAddress).actionIdsByAccount(tokenAddress, account);
         JoinedAction[] memory actions = new JoinedAction[](actionIds.length);
         for (uint256 i = 0; i < actionIds.length; i++) {
             actions[i] = JoinedAction({
                 actionId: actionIds[i],
-                lastJoinedRound: ILOVE20Join(joinAddress).lastJoinedRoundByAccountByActionId(
-                    tokenAddress, account, actionIds[i]
-                ),
-                stakedAmount: ILOVE20Join(joinAddress).stakedAmountByAccountByActionId(tokenAddress, account, actionIds[i])
+                stakedAmount: ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionIds[i], account)
             });
         }
         return actions;
@@ -199,7 +235,7 @@ contract LOVE20DataViewer {
         view
         returns (VerifiedAddress[] memory)
     {
-        address[] memory accounts = ILOVE20Verify(verifyAddress).accountsForVerify(tokenAddress, round, actionId);
+        address[] memory accounts = ILOVE20Join(joinAddress).randomAccounts(tokenAddress, round, actionId);
         VerifiedAddress[] memory verifiedAddresses = new VerifiedAddress[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             verifiedAddresses[i] = VerifiedAddress({
@@ -240,14 +276,47 @@ contract LOVE20DataViewer {
     function verificationInfosByAction(address tokenAddress, uint256 round, uint256 actionId)
         external
         view
-        returns (address[] memory accounts, string[] memory infos)
+        returns (VerificationInfo[] memory verificationInfos)
     {
-        accounts = ILOVE20Verify(verifyAddress).accountsForVerify(tokenAddress, round, actionId);
-        infos = new string[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            infos[i] = ILOVE20Join(joinAddress).verificationInfo(tokenAddress, round, actionId, accounts[i]);
+        address[] memory accounts = ILOVE20Join(joinAddress).randomAccounts(tokenAddress, round, actionId);
+        if (accounts.length == 0) {
+            return new VerificationInfo[](0);
         }
-        return (accounts, infos);
+
+        ActionInfo memory actionInfo = ILOVE20Submit(submitAddress).actionInfo(tokenAddress, actionId);
+        uint256 keysLength = actionInfo.body.verificationKeys.length;
+        if (keysLength == 0) {
+            return new VerificationInfo[](0);
+        }
+        
+        verificationInfos = new VerificationInfo[](accounts.length);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            verificationInfos[i].account = accounts[i];
+            verificationInfos[i].infos = new string[](keysLength);
+            for (uint256 j = 0; j < keysLength; j++) {
+                verificationInfos[i].infos[j] = ILOVE20Join(joinAddress).verificationInfo(tokenAddress, accounts[i], actionInfo.body.verificationKeys[j]);
+            }
+        }
+        return verificationInfos;
+    }
+    
+    function verificationInfosByAccount(address tokenAddress, uint256 actionId, address account)
+        external
+        view
+        returns (string[] memory verificationKeys, string[] memory verificationInfos)
+    {
+        uint256 amount = ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionId, account);
+        if (amount == 0) {
+            return (new string[](0), new string[](0));
+        }
+
+        ActionInfo memory actionInfo = ILOVE20Submit(submitAddress).actionInfo(tokenAddress, actionId);
+        uint256 keysLength = actionInfo.body.verificationKeys.length;
+        verificationInfos = new string[](keysLength);
+        for (uint256 i = 0; i < keysLength; i++) {
+            verificationInfos[i] = ILOVE20Join(joinAddress).verificationInfo(tokenAddress, account, actionInfo.body.verificationKeys[i]);
+        }
+        return (actionInfo.body.verificationKeys, verificationInfos);
     }
 
     function tokenDetail(address tokenAddress)
