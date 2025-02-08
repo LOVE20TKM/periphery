@@ -16,6 +16,10 @@ interface ILOVE20Submit {
         address tokenAddress,
         uint256 actionId
     ) external view returns (ActionInfo memory);
+    function actionInfosByIds(
+        address tokenAddress,
+        uint256[] calldata actionIds
+    ) external view returns (ActionInfo[] memory);
 }
 
 interface ILOVE20Vote {
@@ -119,7 +123,13 @@ struct JoinableAction {
     uint256 joinedAmount;
 }
 
-struct JoinedAction {
+struct JoinableActionDetail {
+    ActionInfo action;
+    uint256 votesNum;
+    uint256 joinedAmount;
+}
+
+struct JoinedAction {   
     uint256 actionId;
     uint256 stakedAmount;
 }
@@ -230,6 +240,25 @@ contract LOVE20DataViewer {
         return actions;
     }
 
+    function joinableActionDetailsWithJoinedInfos(address tokenAddress, uint256 round, address account)
+        external
+        view
+        returns (JoinableActionDetail[] memory, JoinedAction[] memory)
+    {
+        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(voteAddress).votesNums(tokenAddress, round);
+        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress).actionInfosByIds(tokenAddress, actionIds);
+        JoinableActionDetail[] memory joinableActionDetails = new JoinableActionDetail[](actionInfos.length);
+        for (uint256 i = 0; i < actionInfos.length; i++) {
+            joinableActionDetails[i] = JoinableActionDetail({
+                action: actionInfos[i],
+                votesNum: votes[i],
+                joinedAmount: ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionIds[i], account)
+            });
+        }
+        JoinedAction[] memory joinedActions_ = this.joinedActions(tokenAddress, account);
+        return (joinableActionDetails, joinedActions_);
+    }
+
     function verifiedAddressesByAction(address tokenAddress, uint256 round, uint256 actionId)
         external
         view
@@ -285,16 +314,17 @@ contract LOVE20DataViewer {
 
         ActionInfo memory actionInfo = ILOVE20Submit(submitAddress).actionInfo(tokenAddress, actionId);
         uint256 keysLength = actionInfo.body.verificationKeys.length;
-        if (keysLength == 0) {
-            return new VerificationInfo[](0);
-        }
         
         verificationInfos = new VerificationInfo[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             verificationInfos[i].account = accounts[i];
-            verificationInfos[i].infos = new string[](keysLength);
-            for (uint256 j = 0; j < keysLength; j++) {
-                verificationInfos[i].infos[j] = ILOVE20Join(joinAddress).verificationInfo(tokenAddress, accounts[i], actionInfo.body.verificationKeys[j]);
+            if (keysLength > 0) {
+                verificationInfos[i].infos = new string[](keysLength);
+                for (uint256 j = 0; j < keysLength; j++) {
+                    verificationInfos[i].infos[j] = ILOVE20Join(joinAddress).verificationInfo(tokenAddress, accounts[i], actionInfo.body.verificationKeys[j]);
+                }
+            } else {
+                verificationInfos[i].infos = new string[](0);
             }
         }
         return verificationInfos;

@@ -69,6 +69,14 @@ contract MockILOVE20Submit is ILOVE20Submit {
         actionInfo_.body.whiteList[0] = tokenAddress;
         return actionInfo_;
     }
+
+    function actionInfosByIds(address tokenAddress, uint256[] calldata actionIds) external view override returns (ActionInfo[] memory) {
+        ActionInfo[] memory actionInfos = new ActionInfo[](actionIds.length);
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            actionInfos[i] = this.actionInfo(tokenAddress, actionIds[i]);
+        }
+        return actionInfos;
+    }
 }
 
 // Mock ILOVE20Vote interface
@@ -287,6 +295,23 @@ contract LOVE20DataViewerTest is Test {
         assertEq(actions[0].actionId, 1, "actionId should be 1");
         assertEq(actions[0].stakedAmount, 500, "stakedAmount should be 500");
     }
+
+    // Test joinableActionDetailsWithJoinedInfos function
+    // function testJoinableActionDetailsWithJoinedInfos() public {
+    //     viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+
+    //     (JoinableActionDetail[] memory joinableActionDetails, JoinedAction[] memory joinedActions) = viewer.joinableActionDetailsWithJoinedInfos(address(mockERC20), 1, address(this));
+    //     assertEq(joinedActions.length, 1, "Should return one JoinedAction");
+    //     assertEq(joinedActions[0].actionId, 1, "actionId should be 1");
+    //     assertEq(joinedActions[0].stakedAmount, 500, "stakedAmount should be 500");
+    //     assertEq(joinableActionDetails.length, 2, "Should return two JoinableActionDetails");
+    //     assertEq(joinableActionDetails[0].action.head.id, 1, "actionId should be 1");
+    //     assertEq(joinableActionDetails[0].votesNum, 100, "votesNum should be 100");
+    //     assertEq(joinableActionDetails[0].joinedAmount, 500, "joinedAmount should be 500");
+    //     assertEq(joinableActionDetails[1].action.head.id, 2, "actionId should be 2");
+    //     assertEq(joinableActionDetails[1].votesNum, 200, "votesNum should be 200");
+    //     assertEq(joinableActionDetails[1].joinedAmount, 1000, "joinedAmount should be 1000");
+    // }
 
     // Test verifiedAddressesByAction function
     function testVerifiedAddressesByAction() public {
