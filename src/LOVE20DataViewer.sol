@@ -8,6 +8,7 @@ interface ILOVE20Launch {
 }
 
 interface ILOVE20Stake {
+    function govVotesNum(address tokenAddress) external view returns (uint256);
     function initialStakeRound(address tokenAddress) external view returns (uint256);
 }
 
@@ -87,6 +88,7 @@ interface LOVE20Token {
     function decimals() external view returns (uint256);
     function slAddress() external view returns (address);
     function stAddress() external view returns (address);
+    function totalSupply() external view returns (uint256);
 }
 
 struct ActionHead {
@@ -144,6 +146,12 @@ struct GovReward {
     uint256 round;
     uint256 minted;
     uint256 unminted;
+}
+
+struct GovData {
+    uint256 govVotes;
+    uint256 slAmount;
+    uint256 stAmount;
 }
 
 struct LaunchInfo {
@@ -391,5 +399,20 @@ contract LOVE20DataViewer {
     {
         address tokenAddress = ILOVE20Launch(launchAddress).tokenAddressBySymbol(symbol);
         return tokenDetail(tokenAddress);
+    }
+
+    function govData(address tokenAddress)
+        external
+        view
+        returns (GovData memory govData_)
+    {
+        LOVE20Token love20 = LOVE20Token(tokenAddress);
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        govData_ = GovData({
+            govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
+            slAmount: LOVE20Token(love20.slAddress()).totalSupply(),
+            stAmount: LOVE20Token(love20.stAddress()).totalSupply()
+        });
+        return govData_;
     }
 }

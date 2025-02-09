@@ -40,6 +40,11 @@ contract MockILOVE20Stake is ILOVE20Stake {
         tokenAddress;
         return 42;
     }
+
+    function govVotesNum(address tokenAddress) external pure override returns (uint256) {
+        tokenAddress;
+        return 100;
+    }
 }
 
 // Mock ILOVE20Submit interface
@@ -211,6 +216,10 @@ contract MockERC20 is LOVE20Token {
 
     function stAddress() external view returns (address) {
         return address(this);
+    }
+
+    function totalSupply() external pure returns (uint256) {
+        return 1000000000000000000000000;
     }
 }
 
@@ -431,4 +440,15 @@ contract LOVE20DataViewerTest is Test {
             // Continue adding other assertions...
         }
     }
+
+    // Test govData function
+    function testGovData() public {
+        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
+
+        GovData memory govData = viewer.govData(address(mockERC20));
+        assertEq(govData.govVotes, 100, "govVotes should be 100");
+        assertEq(govData.slAmount, 1000000000000000000000000, "slAmount should be 1000000000000000000000000");
+        assertEq(govData.stAmount, 1000000000000000000000000, "stAmount should be 1000000000000000000000000");
+    }
+    
 }
