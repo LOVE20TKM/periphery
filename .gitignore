@@ -11,6 +11,8 @@ out/
 # bsc testnet
 /broadcast/*/97/
 /broadcast/**/dry-run/
+# thinkium801
+/broadcast/**/801/
 
 # Flattened contracts
 /flatten
