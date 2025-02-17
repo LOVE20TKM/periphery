@@ -17,13 +17,25 @@ source $network_dir/.account && \
 source $network_dir/network.params && \
 source $network_dir/DataViewer.params
 
+# forge_script() {
+#     forge script "$@" \
+#     --rpc-url $RPC_URL \
+#     --private-key $PRIVATE_KEY \
+#     --broadcast \
+#     $([ "$network" != "anvil" ] && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
+# }
+
+## used for thinkium801
 forge_script() {
-    forge script "$@" \
+  forge script "$@" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
+    --gas-price 5000000000 \
+    --gas-limit 50000000 \
     --broadcast \
-    $([ "$network" != "anvil" ] && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
+    --legacy \
 }
+echo "forge_script() loaded"
 
 # 打印成功信息，并输出当前网络
 echo -e "\033[32mSuccess:\033[0m Deployed on $network"
