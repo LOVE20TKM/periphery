@@ -89,6 +89,18 @@ interface LOVE20Token {
     function slAddress() external view returns (address);
     function stAddress() external view returns (address);
     function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
+}
+
+interface ILOVE20SLToken {
+    function uniswapV2Pair() external view returns (address);
+}
+
+interface IUniswapV2Pair {
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
 }
 
 struct ActionHead {
@@ -181,6 +193,16 @@ struct TokenInfo {
 struct VerificationInfo {
     address account;
     string[] infos;
+}
+
+struct AccountPairInfo {
+    address pairAddress;
+    uint256 balanceOfToken;
+    uint256 balanceOfParentToken;
+    uint256 allowanceOfToken;
+    uint256 allowanceOfParentToken;
+    uint256 pairReserveToken;
+    uint256 pairReserveParentToken;
 }
 
 contract LOVE20DataViewer {
@@ -414,5 +436,46 @@ contract LOVE20DataViewer {
             stAmount: LOVE20Token(love20.stAddress()).totalSupply()
         });
         return govData_;
+    }
+
+    function accountPair(address account, address tokenAddress, address parentTokenAddress)
+        external
+        view
+        returns (AccountPairInfo memory pairInfo)
+    {
+        address slAddress = LOVE20Token(tokenAddress).slAddress();
+        address pairAddress;
+        uint256 reserveToken;
+        uint256 reserveParentToken;
+
+        // get reserve0 and reserve1
+        if (slAddress != address(0)) {
+            pairAddress = ILOVE20SLToken(slAddress).uniswapV2Pair();
+            (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pairAddress).getReserves();
+            address token0 = IUniswapV2Pair(pairAddress).token0();
+            address token1 = IUniswapV2Pair(pairAddress).token1();
+
+            if (token0 == tokenAddress && token1 == parentTokenAddress) {
+                reserveToken = reserve0;
+                reserveParentToken = reserve1;
+            } else if (token0 == parentTokenAddress && token1 == tokenAddress) {
+                reserveToken = reserve1;
+                reserveParentToken = reserve0;
+            } else {
+                revert("token address or parent token address is not correct");
+            }
+        }
+
+        // get other info
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        pairInfo = AccountPairInfo({
+            pairAddress: pairAddress,
+            balanceOfToken: LOVE20Token(tokenAddress).balanceOf(account),
+            balanceOfParentToken: LOVE20Token(parentTokenAddress).balanceOf(account),
+            allowanceOfToken: LOVE20Token(tokenAddress).allowance(account, stakeAddress),
+            allowanceOfParentToken: LOVE20Token(parentTokenAddress).allowance(account, stakeAddress),
+            pairReserveToken: reserveToken,
+            pairReserveParentToken: reserveParentToken
+        });
     }
 }

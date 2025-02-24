@@ -30,7 +30,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
     }
 
     function tokenAddressBySymbol(string memory symbol) external view override returns (address) {
-        console.log("symbol@tokenAddressBySymbol", symbol);
+        symbol;
         return address(parentTokenAddress);
     }
 }
@@ -190,13 +190,14 @@ contract MockILOVE20Mint is ILOVE20Mint {
 }
 
 // Mock IERC20 interface
-contract MockERC20 is LOVE20Token {
+contract MockERC20 is LOVE20Token, ILOVE20SLToken, IUniswapV2Pair {
     string private _symbol;
+    address private _uniswapV2Pair;
 
     constructor(string memory symbol_) {
         _symbol = symbol_;
+        _uniswapV2Pair = address(this);
     }
-
 
     function name() external pure override returns (string memory) {
         return "TEST";
@@ -221,6 +222,36 @@ contract MockERC20 is LOVE20Token {
     function totalSupply() external pure returns (uint256) {
         return 1000000000000000000000000;
     }
+
+    function balanceOf(address account) external pure returns (uint256) {
+        account;
+        return 1000;
+    }
+
+    function allowance(address owner, address spender) external pure returns (uint256) {
+        owner;
+        spender;
+        return 1000;
+    }
+
+    function uniswapV2Pair() external view override returns (address) {
+        return _uniswapV2Pair;
+    }
+
+    // 实现 IUniswapV2Pair 接口的必要函数
+    function getReserves() external pure returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) {
+        return (0, 0, 0);
+    }
+
+    // IUniswapV2Pair 接口需要的其他函数
+    function token0() external view returns (address) {
+        return address(this);
+    }
+
+    function token1() external view returns (address) {
+        return address(this);
+    }
+
 }
 
 contract LOVE20DataViewerTest is Test {
@@ -449,6 +480,32 @@ contract LOVE20DataViewerTest is Test {
         assertEq(govData.govVotes, 100, "govVotes should be 100");
         assertEq(govData.slAmount, 1000000000000000000000000, "slAmount should be 1000000000000000000000000");
         assertEq(govData.stAmount, 1000000000000000000000000, "stAmount should be 1000000000000000000000000");
+    }
+
+    // Test accountPair function
+    function testAccountPair() public {
+        viewer.init(
+            address(mockLaunch),
+            address(mockSubmit),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
+
+        AccountPairInfo memory pairInfo = viewer.accountPair(
+            address(this),
+            address(mockERC20),
+            address(mockERC20)
+        );
+
+        assertEq(pairInfo.pairAddress, address(mockERC20), "Incorrect pair address");
+        assertEq(pairInfo.balanceOfToken, 1000, "Incorrect token balance");
+        assertEq(pairInfo.balanceOfParentToken, 1000, "Incorrect parent token balance");
+        assertEq(pairInfo.allowanceOfToken, 1000, "Incorrect token allowance");
+        assertEq(pairInfo.allowanceOfParentToken, 1000, "Incorrect parent token allowance");
+        assertEq(pairInfo.pairReserveToken, 0, "Incorrect pair reserve token");
+        assertEq(pairInfo.pairReserveParentToken, 0, "Incorrect pair reserve parent token");
     }
     
 }
