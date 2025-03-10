@@ -1,134 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.19;
 
-interface ILOVE20Launch {
-    function launches(address tokenAddress) external view returns (LaunchInfo memory);
-    function tokenAddressBySymbol(string memory symbol) external view returns (address);
-    function stakeAddress() external view returns (address);
+import "./interfaces/ILOVE20Core.sol";
+
+
+struct TokenInfo {
+    address tokenAddress;
+    string name;
+    string symbol;
+    uint256 decimals;
+    string parentTokenSymbol;
+    address slAddress;
+    address stAddress;
+    uint256 initialStakeRound;
 }
 
-interface ILOVE20Stake {
-    function govVotesNum(address tokenAddress) external view returns (uint256);
-    function initialStakeRound(address tokenAddress) external view returns (uint256);
-}
-
-interface ILOVE20Submit {
-    function actionInfo(
-        address tokenAddress,
-        uint256 actionId
-    ) external view returns (ActionInfo memory);
-    function actionInfosByIds(
-        address tokenAddress,
-        uint256[] calldata actionIds
-    ) external view returns (ActionInfo[] memory);
-}
-
-interface ILOVE20Vote {
-    function votesNums(address tokenAddress, uint256 round)
-        external
-        view
-        returns (uint256[] memory actionIds, uint256[] memory votes);
-}
-
-interface ILOVE20Join {
-    function amountByActionId(address tokenAddress, uint256 actionId)
-        external
-        view
-        returns (uint256);
-
-    function actionIdsByAccount(address tokenAddress, address account) external view returns (uint256[] memory);
-
-    function amountByActionIdByAccount(address tokenAddress, uint256 actionId, address account)
-        external
-        view
-        returns (uint256);
-
-    function randomAccounts(address tokenAddress, uint256 round, uint256 actionId)
-        external
-        view
-        returns (address[] memory);
-
-    function verificationInfo(
-        address tokenAddress,
-        address accountAddress,
-        string memory verificationKey
-    ) external view returns (string memory);
-}
-
-interface ILOVE20Verify {
-
-    function scoreByActionIdByAccount(address tokenAddress, uint256 round, uint256 actionId, address account)
-        external
-        view
-        returns (uint256);
-}
-
-interface ILOVE20Mint {
-    function actionRewardByActionIdByAccount(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId,
-        address accountAddress
-    ) external view returns (uint256);
-
-    function govRewardByAccount(address tokenAddress, uint256 round, address accountAddress)
-        external
-        view
-        returns (uint256 verifyReward, uint256 boostReward, uint256 burnReward);
-
-    function govRewardMintedByAccount(address tokenAddress, uint256 round, address accountAddress)
-        external
-        view
-        returns (uint256);
-}
-
-interface LOVE20Token {
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint256);
-    function slAddress() external view returns (address);
-    function stAddress() external view returns (address);
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address account) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-}
-
-interface ILOVE20SLToken {
-    function uniswapV2Pair() external view returns (address);
-}
-
-interface IUniswapV2Pair {
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function token0() external view returns (address);
-    function token1() external view returns (address);
-}
-
-struct ActionHead {
-    // managed by contract
-    uint256 id;
-    address author;
-    uint256 createAtBlock;
-}
-
-struct ActionBody {
-    // max token amount for staking
-    uint256 maxStake;
-    // max random accounts for verification
-    uint256 maxRandomAccounts;
-    // contract must comply with IWhiteList. If not set, all users can join the action.
-    address[] whiteList;
-    // action info
-    string action;
-    string consensus;
-    string verificationRule;
-    // guide for inputting verification info
-    string[] verificationKeys;
-    string[] verificationInfoGuides;
-}
-
-struct ActionInfo {
-    ActionHead head;
-    ActionBody body;
+struct PairInfoWithAccount {
+    address pairAddress;
+    uint256 balanceOfToken;
+    uint256 balanceOfParentToken;
+    uint256 allowanceOfToken;
+    uint256 allowanceOfParentToken;
+    uint256 pairReserveToken;
+    uint256 pairReserveParentToken;
 }
 
 struct JoinableAction {
@@ -148,46 +42,16 @@ struct JoinedAction {
     uint256 stakedAmount;
 }
 
-struct VerifiedAddress {
-    address account;
-    uint256 score;
-    uint256 reward;
-}
-
-struct GovReward {
-    uint256 round;
-    uint256 minted;
-    uint256 unminted;
-}
-
 struct GovData {
     uint256 govVotes;
     uint256 slAmount;
     uint256 stAmount;
 }
 
-struct LaunchInfo {
-    address parentTokenAddress;
-    uint256 parentTokenFundraisingGoal;
-    uint256 secondHalfMinBlocks;
-    uint256 launchAmount;
-    uint256 startBlock;
-    uint256 secondHalfStartBlock;
-    bool hasEnded;
-    uint256 participantCount;
-    uint256 totalContributed;
-    uint256 totalExtraRefunded;
-}
-
-struct TokenInfo {
-    address tokenAddress;
-    string name;
-    string symbol;
-    uint256 decimals;
-    string parentTokenSymbol;
-    address slAddress;
-    address stAddress;
-    uint256 initialStakeRound;
+struct VerifiedAddress {
+    address account;
+    uint256 score;
+    uint256 reward;
 }
 
 struct VerificationInfo {
@@ -195,14 +59,10 @@ struct VerificationInfo {
     string[] infos;
 }
 
-struct AccountPairInfo {
-    address pairAddress;
-    uint256 balanceOfToken;
-    uint256 balanceOfParentToken;
-    uint256 allowanceOfToken;
-    uint256 allowanceOfParentToken;
-    uint256 pairReserveToken;
-    uint256 pairReserveParentToken;
+struct GovReward {
+    uint256 round;
+    uint256 minted;
+    uint256 unminted;
 }
 
 contract LOVE20DataViewer {
@@ -212,7 +72,6 @@ contract LOVE20DataViewer {
     address public submitAddress;
     address public voteAddress;
     address public joinAddress;
-    // address public randomAddress; // Removed randomAddress
     address public verifyAddress;
     address public mintAddress;
 
@@ -245,6 +104,97 @@ contract LOVE20DataViewer {
         mintAddress = mintAddress_;
     }
 
+
+    //---------------- Token related functions ----------------
+
+    function tokenDetail(address tokenAddress)
+        public
+        view
+        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
+    {
+        launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        LOVE20Token love20 = LOVE20Token(tokenAddress);
+        tokenInfo = TokenInfo({
+            tokenAddress: tokenAddress,
+            name: love20.name(),
+            symbol: love20.symbol(),
+            decimals: love20.decimals(),
+            parentTokenSymbol: LOVE20Token(launchInfo.parentTokenAddress).symbol(),
+            slAddress: love20.slAddress(),
+            stAddress: love20.stAddress(),
+            initialStakeRound: ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress)
+        });
+        return (tokenInfo, launchInfo);
+    }
+
+    function tokenDetails(address[] memory tokenAddresses)
+        external
+        view
+        returns (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos)
+    {
+        tokenInfos = new TokenInfo[](tokenAddresses.length);
+        launchInfos = new LaunchInfo[](tokenAddresses.length);
+        for (uint256 i = 0; i < tokenAddresses.length; i++) {
+            (tokenInfos[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
+        }
+
+        return (tokenInfos, launchInfos);
+    }
+
+    function tokenDetailBySymbol(string memory symbol)
+        external
+        view
+        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
+    {
+        address tokenAddress = ILOVE20Launch(launchAddress).tokenAddressBySymbol(symbol);
+        return tokenDetail(tokenAddress);
+    }
+
+    function tokenPairInfoWithAccount(address account, address tokenAddress, address parentTokenAddress)
+        external
+        view
+        returns (PairInfoWithAccount memory pairInfo)
+    {
+        address slAddress = LOVE20Token(tokenAddress).slAddress();
+        address pairAddress;
+        uint256 reserveToken;
+        uint256 reserveParentToken;
+
+        // get reserve0 and reserve1
+        if (slAddress != address(0)) {
+            pairAddress = ILOVE20SLToken(slAddress).uniswapV2Pair();
+            (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pairAddress).getReserves();
+            address token0 = IUniswapV2Pair(pairAddress).token0();
+            address token1 = IUniswapV2Pair(pairAddress).token1();
+
+            if (token0 == tokenAddress && token1 == parentTokenAddress) {
+                reserveToken = reserve0;
+                reserveParentToken = reserve1;
+            } else if (token0 == parentTokenAddress && token1 == tokenAddress) {
+                reserveToken = reserve1;
+                reserveParentToken = reserve0;
+            } else {
+                revert("token address or parent token address is not correct");
+            }
+        }
+
+        // get other info
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        pairInfo = PairInfoWithAccount({
+            pairAddress: pairAddress,
+            balanceOfToken: LOVE20Token(tokenAddress).balanceOf(account),
+            balanceOfParentToken: LOVE20Token(parentTokenAddress).balanceOf(account),
+            allowanceOfToken: LOVE20Token(tokenAddress).allowance(account, stakeAddress),
+            allowanceOfParentToken: LOVE20Token(parentTokenAddress).allowance(account, stakeAddress),
+            pairReserveToken: reserveToken,
+            pairReserveParentToken: reserveParentToken
+        });
+    }
+
+
+    //---------------- Action related functions ----------------
+
     function joinableActions(address tokenAddress, uint256 round) external view returns (JoinableAction[] memory) {
         (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(voteAddress).votesNums(tokenAddress, round);
         JoinableAction[] memory actions = new JoinableAction[](actionIds.length);
@@ -253,18 +203,6 @@ contract LOVE20DataViewer {
                 actionId: actionIds[i],
                 votesNum: votes[i],
                 joinedAmount: ILOVE20Join(joinAddress).amountByActionId(tokenAddress, actionIds[i])
-            });
-        }
-        return actions;
-    }
-
-    function joinedActions(address tokenAddress, address account) external view returns (JoinedAction[] memory) {
-        uint256[] memory actionIds = ILOVE20Join(joinAddress).actionIdsByAccount(tokenAddress, account);
-        JoinedAction[] memory actions = new JoinedAction[](actionIds.length);
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            actions[i] = JoinedAction({
-                actionId: actionIds[i],
-                stakedAmount: ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionIds[i], account)
             });
         }
         return actions;
@@ -289,6 +227,39 @@ contract LOVE20DataViewer {
         return (joinableActionDetails, joinedActions_);
     }
 
+    function joinedActions(address tokenAddress, address account) external view returns (JoinedAction[] memory) {
+        uint256[] memory actionIds = ILOVE20Join(joinAddress).actionIdsByAccount(tokenAddress, account);
+        JoinedAction[] memory actions = new JoinedAction[](actionIds.length);
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            actions[i] = JoinedAction({
+                actionId: actionIds[i],
+                stakedAmount: ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionIds[i], account)
+            });
+        }
+        return actions;
+    }
+
+
+    //---------------- Gov related functions ----------------
+
+    function govData(address tokenAddress)
+        external
+        view
+        returns (GovData memory govData_)
+    {
+        LOVE20Token love20 = LOVE20Token(tokenAddress);
+        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        govData_ = GovData({
+            govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
+            slAmount: LOVE20Token(love20.slAddress()).totalSupply(),
+            stAmount: LOVE20Token(love20.stAddress()).totalSupply()
+        });
+        return govData_;
+    }
+
+
+    //---------------- Verification related functions ----------------
+
     function verifiedAddressesByAction(address tokenAddress, uint256 round, uint256 actionId)
         external
         view
@@ -304,32 +275,6 @@ contract LOVE20DataViewer {
             });
         }
         return verifiedAddresses;
-    }
-
-    function govRewardsByAccountByRounds(address tokenAddress, address account, uint256 startRound, uint256 endRound)
-        external
-        view
-        returns (GovReward[] memory rewards)
-    {
-        require(startRound >= 0, "startRound < 0");
-        require(endRound >= 0, "endRound < 0");
-
-        uint256 minRound = startRound;
-        uint256 maxRound = endRound;
-        if (startRound > endRound) {
-            minRound = endRound;
-            maxRound = startRound;
-        }
-        rewards = new GovReward[](maxRound - minRound + 1);
-        for (uint256 i = minRound; i <= maxRound; i++) {
-            (uint256 verifyReward, uint256 boostReward,) =
-                ILOVE20Mint(mintAddress).govRewardByAccount(tokenAddress, i, account);
-            rewards[i - minRound] = GovReward({
-                round: i,
-                unminted: verifyReward + boostReward,
-                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(tokenAddress, i, account)
-            });
-        }
     }
 
     function verificationInfosByAction(address tokenAddress, uint256 round, uint256 actionId)
@@ -379,103 +324,89 @@ contract LOVE20DataViewer {
         return (actionInfo.body.verificationKeys, verificationInfos);
     }
 
-    function tokenDetail(address tokenAddress)
-        public
-        view
-        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
-    {
-        launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
-        LOVE20Token love20 = LOVE20Token(tokenAddress);
-        tokenInfo = TokenInfo({
-            tokenAddress: tokenAddress,
-            name: love20.name(),
-            symbol: love20.symbol(),
-            decimals: love20.decimals(),
-            parentTokenSymbol: LOVE20Token(launchInfo.parentTokenAddress).symbol(),
-            slAddress: love20.slAddress(),
-            stAddress: love20.stAddress(),
-            initialStakeRound: ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress)
-        });
-        return (tokenInfo, launchInfo);
-    }
+    //---------------- Reward/mint related functions ----------------
 
-    function tokenDetails(address[] memory tokenAddresses)
+    function govRewardsByAccountByRounds(address tokenAddress, address account, uint256 startRound, uint256 endRound)
         external
         view
-        returns (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos)
+        returns (GovReward[] memory rewards)
     {
-        tokenInfos = new TokenInfo[](tokenAddresses.length);
-        launchInfos = new LaunchInfo[](tokenAddresses.length);
-        for (uint256 i = 0; i < tokenAddresses.length; i++) {
-            (tokenInfos[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
+        require(startRound >= 0, "startRound < 0");
+        require(endRound >= 0, "endRound < 0");
+
+        uint256 minRound = startRound;
+        uint256 maxRound = endRound;
+        if (startRound > endRound) {
+            minRound = endRound;
+            maxRound = startRound;
         }
-
-        return (tokenInfos, launchInfos);
+        rewards = new GovReward[](maxRound - minRound + 1);
+        for (uint256 i = minRound; i <= maxRound; i++) {
+            (uint256 verifyReward, uint256 boostReward,) =
+                ILOVE20Mint(mintAddress).govRewardByAccount(tokenAddress, i, account);
+            rewards[i - minRound] = GovReward({
+                round: i,
+                unminted: verifyReward + boostReward,
+                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(tokenAddress, i, account)
+            });
+        }
     }
 
-    function tokenDetailBySymbol(string memory symbol)
-        external
-        view
-        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
-    {
-        address tokenAddress = ILOVE20Launch(launchAddress).tokenAddressBySymbol(symbol);
-        return tokenDetail(tokenAddress);
-    }
+    function actionRewardRoundsByAccount(
+        address tokenAddress,
+        address accountAddress,
+        uint256 actionId,
+        uint256 startRound,
+        uint256 endRound
+    ) public view returns (uint256[] memory rounds, uint256[] memory rewards) {
+        require(startRound <= endRound, "startRound must be less than or equal to endRound");
 
-    function govData(address tokenAddress)
-        external
-        view
-        returns (GovData memory govData_)
-    {
-        LOVE20Token love20 = LOVE20Token(tokenAddress);
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
-        govData_ = GovData({
-            govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
-            slAmount: LOVE20Token(love20.slAddress()).totalSupply(),
-            stAmount: LOVE20Token(love20.stAddress()).totalSupply()
-        });
-        return govData_;
-    }
-
-    function accountPair(address account, address tokenAddress, address parentTokenAddress)
-        external
-        view
-        returns (AccountPairInfo memory pairInfo)
-    {
-        address slAddress = LOVE20Token(tokenAddress).slAddress();
-        address pairAddress;
-        uint256 reserveToken;
-        uint256 reserveParentToken;
-
-        // get reserve0 and reserve1
-        if (slAddress != address(0)) {
-            pairAddress = ILOVE20SLToken(slAddress).uniswapV2Pair();
-            (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pairAddress).getReserves();
-            address token0 = IUniswapV2Pair(pairAddress).token0();
-            address token1 = IUniswapV2Pair(pairAddress).token1();
-
-            if (token0 == tokenAddress && token1 == parentTokenAddress) {
-                reserveToken = reserve0;
-                reserveParentToken = reserve1;
-            } else if (token0 == parentTokenAddress && token1 == tokenAddress) {
-                reserveToken = reserve1;
-                reserveParentToken = reserve0;
-            } else {
-                revert("token address or parent token address is not correct");
+        uint256 currentRound = ILOVE20Mint(mintAddress).currentRound();
+        uint256 effectiveRoundEnd = endRound > currentRound ? currentRound : endRound;
+        
+        // 首先计算有效奖励的数量
+        uint256 validCount = 0;
+        for (uint256 round = startRound; round <= effectiveRoundEnd; round++) {
+            (bool hasReward, ) = _getRewardForRound(tokenAddress, accountAddress, actionId, round);
+            if (hasReward) {
+                validCount++;
             }
         }
-
-        // get other info
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
-        pairInfo = AccountPairInfo({
-            pairAddress: pairAddress,
-            balanceOfToken: LOVE20Token(tokenAddress).balanceOf(account),
-            balanceOfParentToken: LOVE20Token(parentTokenAddress).balanceOf(account),
-            allowanceOfToken: LOVE20Token(tokenAddress).allowance(account, stakeAddress),
-            allowanceOfParentToken: LOVE20Token(parentTokenAddress).allowance(account, stakeAddress),
-            pairReserveToken: reserveToken,
-            pairReserveParentToken: reserveParentToken
-        });
+        
+        // Create arrays with exact size
+        rounds = new uint256[](validCount);
+        rewards = new uint256[](validCount);
+        
+        // 填充数组
+        uint256 index = 0;
+        for (uint256 round = startRound; round <= effectiveRoundEnd; round++) {
+            (bool hasReward, uint256 reward) = _getRewardForRound(tokenAddress, accountAddress, actionId, round);
+            if (hasReward) {
+                rounds[index] = round;
+                rewards[index] = reward;
+                index++;
+            }
+        }
+        
+        return (rounds, rewards);
+    }
+    function _getRewardForRound(
+        address tokenAddress,
+        address accountAddress,
+        uint256 actionId,
+        uint256 round
+    ) private view returns (bool hasReward, uint256 reward) {
+        if (!ILOVE20Verify(verifyAddress).isActionIdWithReward(tokenAddress, round, actionId)) {
+            return (false, 0);
+        }
+        
+        reward = ILOVE20Mint(mintAddress).actionRewardByActionIdByAccount(
+            tokenAddress,
+            round,
+            actionId,
+            accountAddress
+        );
+        
+        return (reward > 0, reward);
     }
 }
