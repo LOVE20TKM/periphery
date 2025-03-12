@@ -310,11 +310,6 @@ contract LOVE20DataViewer {
         view
         returns (string[] memory verificationKeys, string[] memory verificationInfos)
     {
-        uint256 amount = ILOVE20Join(joinAddress).amountByActionIdByAccount(tokenAddress, actionId, account);
-        if (amount == 0) {
-            return (new string[](0), new string[](0));
-        }
-
         ActionInfo memory actionInfo = ILOVE20Submit(submitAddress).actionInfo(tokenAddress, actionId);
         uint256 keysLength = actionInfo.body.verificationKeys.length;
         verificationInfos = new string[](keysLength);

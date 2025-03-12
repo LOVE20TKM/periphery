@@ -34,6 +34,7 @@ forge_script() {
     --gas-limit 50000000 \
     --broadcast \
     --legacy \
+    $([ "$network" != "anvil" ] && [ "$network" != "thinkium801" ] && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
 }
 echo "forge_script() loaded"
 
