@@ -128,6 +128,10 @@ interface ILOVE20Mint {
         external
         view
         returns (uint256);
+
+    function rewardAvailable(
+        address tokenAddress
+    ) external view returns (uint256);
 }
 
 interface LOVE20Token {
@@ -143,6 +147,10 @@ interface LOVE20Token {
 
 interface ILOVE20SLToken {
     function uniswapV2Pair() external view returns (address);
+
+    function tokenAmountsBySlAmount(
+        uint256 slAmount
+    ) external view returns (uint256 tokenAmount, uint256 parentTokenAmount);
 }
 
 interface IUniswapV2Pair {

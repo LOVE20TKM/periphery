@@ -246,6 +246,9 @@ contract LOVE20DataViewerTest is Test {
         assertEq(govData.govVotes, 100, "govVotes should be 100");
         assertEq(govData.slAmount, 1000000000000000000000000, "slAmount should be 1000000000000000000000000");
         assertEq(govData.stAmount, 1000000000000000000000000, "stAmount should be 1000000000000000000000000");
+        assertEq(govData.tokenAmountForSl, 1000000000000000000000000, "tokenAmountForSl should be 1000000000000000000000000");
+        assertEq(govData.parentTokenAmountForSl, 1000000000000000000000000, "parentTokenAmountForSl should be 1000000000000000000000000");
+        assertEq(govData.rewardAvailable, 50, "rewardAvailable should be 50");
     }
 
     // Test govRewardsByAccountByRounds function

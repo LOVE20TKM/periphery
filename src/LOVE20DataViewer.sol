@@ -46,6 +46,9 @@ struct GovData {
     uint256 govVotes;
     uint256 slAmount;
     uint256 stAmount;
+    uint256 tokenAmountForSl;
+    uint256 parentTokenAmountForSl;
+    uint256 rewardAvailable;
 }
 
 struct VerifiedAddress {
@@ -248,11 +251,19 @@ contract LOVE20DataViewer {
         returns (GovData memory govData_)
     {
         LOVE20Token love20 = LOVE20Token(tokenAddress);
+        uint256 slAmount = LOVE20Token(love20.slAddress()).totalSupply();
+
         address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
+        (uint256 tokenAmount, uint256 parentTokenAmount) = ILOVE20SLToken(love20.slAddress()).tokenAmountsBySlAmount(slAmount);
+        uint256 rewardAvailable = ILOVE20Mint(mintAddress).rewardAvailable(tokenAddress);
+        
         govData_ = GovData({
             govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
-            slAmount: LOVE20Token(love20.slAddress()).totalSupply(),
-            stAmount: LOVE20Token(love20.stAddress()).totalSupply()
+            slAmount: slAmount,
+            stAmount: LOVE20Token(love20.stAddress()).totalSupply(),
+            tokenAmountForSl: tokenAmount,
+            parentTokenAmountForSl: parentTokenAmount,
+            rewardAvailable: rewardAvailable
         });
         return govData_;
     }

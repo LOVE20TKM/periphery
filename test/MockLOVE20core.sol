@@ -194,6 +194,10 @@ contract MockILOVE20Mint is ILOVE20Mint {
     function govRewardMintedByAccount(address, uint256, address) external pure override returns (uint256) {
         return 50;
     }
+
+    function rewardAvailable(address) external pure override returns (uint256) {
+        return 50;
+    }
 }
 
 // Mock IERC20 interface
@@ -257,6 +261,11 @@ contract MockERC20 is LOVE20Token, ILOVE20SLToken, IUniswapV2Pair {
 
     function token1() external view returns (address) {
         return address(this);
+    }
+
+    function tokenAmountsBySlAmount(uint256 slAmount) external pure override returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+        tokenAmount = slAmount;
+        parentTokenAmount = slAmount;
     }
 
 }
