@@ -187,6 +187,15 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 0;
     }
 
+    function actionRewardMintedByAccount(address, uint256, uint256, address account) external pure override returns (uint256) {
+        if (account == address(0x1)) {
+            return 50;
+        } else if (account == address(0x2)) {
+            return 0;
+        }
+        return 0;
+    }
+
     function govRewardByAccount(address, uint256, address) external pure override returns (uint256, uint256, uint256) {
         return (50, 50, 50);
     }

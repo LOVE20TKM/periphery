@@ -54,7 +54,8 @@ struct GovData {
 struct VerifiedAddress {
     address account;
     uint256 score;
-    uint256 reward;
+    uint256 minted;
+    uint256 unminted;
 }
 
 struct VerificationInfo {
@@ -62,15 +63,13 @@ struct VerificationInfo {
     string[] infos;
 }
 
-struct GovReward {
+struct RewardInfo {
     uint256 round;
     uint256 minted;
     uint256 unminted;
 }
 
 contract LOVE20DataViewer {
-    address public initSetter;
-
     address public launchAddress;
     address public submitAddress;
     address public voteAddress;
@@ -78,17 +77,9 @@ contract LOVE20DataViewer {
     address public verifyAddress;
     address public mintAddress;
 
-    constructor(address initSetter_) {
-        initSetter = initSetter_;
-    }
+    bool public initialized;
 
-    modifier onlyInitSetter() {
-        require(msg.sender == initSetter, "msg.sender is not initSetter");
-        _;
-    }
-
-    function setInitSetter(address newInitSetter) external onlyInitSetter {
-        initSetter = newInitSetter;
+    constructor() {
     }
 
     function init(
@@ -98,13 +89,17 @@ contract LOVE20DataViewer {
         address joinAddress_,
         address verifyAddress_,
         address mintAddress_
-    ) external onlyInitSetter {
+    ) external {
+        require(!initialized, "Already initialized");
+
         launchAddress = launchAddress_;
         submitAddress = submitAddress_;
         voteAddress = voteAddress_;
         joinAddress = joinAddress_;
         verifyAddress = verifyAddress_;
         mintAddress = mintAddress_;
+
+        initialized = true;
     }
 
 
@@ -164,8 +159,8 @@ contract LOVE20DataViewer {
         uint256 reserveToken;
         uint256 reserveParentToken;
 
-        // get reserve0 and reserve1
-        if (slAddress != address(0)) {
+        // get reserve0 and reserve1       
+        {
             pairAddress = ILOVE20SLToken(slAddress).uniswapV2Pair();
             (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pairAddress).getReserves();
             address token0 = IUniswapV2Pair(pairAddress).token0();
@@ -197,19 +192,6 @@ contract LOVE20DataViewer {
 
 
     //---------------- Action related functions ----------------
-
-    function joinableActions(address tokenAddress, uint256 round) external view returns (JoinableAction[] memory) {
-        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(voteAddress).votesNums(tokenAddress, round);
-        JoinableAction[] memory actions = new JoinableAction[](actionIds.length);
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            actions[i] = JoinableAction({
-                actionId: actionIds[i],
-                votesNum: votes[i],
-                joinedAmount: ILOVE20Join(joinAddress).amountByActionId(tokenAddress, actionIds[i])
-            });
-        }
-        return actions;
-    }
 
     function joinableActionDetailsWithJoinedInfos(address tokenAddress, uint256 round, address account)
         external
@@ -282,7 +264,8 @@ contract LOVE20DataViewer {
             verifiedAddresses[i] = VerifiedAddress({
                 account: accounts[i],
                 score: ILOVE20Verify(verifyAddress).scoreByActionIdByAccount(tokenAddress, round, actionId, accounts[i]),
-                reward: ILOVE20Mint(mintAddress).actionRewardByActionIdByAccount(tokenAddress, round, actionId, accounts[i])
+                minted: ILOVE20Mint(mintAddress).actionRewardMintedByAccount(tokenAddress, round, actionId, accounts[i]),
+                unminted: ILOVE20Mint(mintAddress).actionRewardByActionIdByAccount(tokenAddress, round, actionId, accounts[i]) 
             });
         }
         return verifiedAddresses;
@@ -335,84 +318,59 @@ contract LOVE20DataViewer {
     function govRewardsByAccountByRounds(address tokenAddress, address account, uint256 startRound, uint256 endRound)
         external
         view
-        returns (GovReward[] memory rewards)
+        returns (RewardInfo[] memory rewards)
     {
-        require(startRound >= 0, "startRound < 0");
-        require(endRound >= 0, "endRound < 0");
+        require(startRound <= endRound, "startRound must be less than or equal to endRound");
 
-        uint256 minRound = startRound;
-        uint256 maxRound = endRound;
-        if (startRound > endRound) {
-            minRound = endRound;
-            maxRound = startRound;
-        }
-        rewards = new GovReward[](maxRound - minRound + 1);
-        for (uint256 i = minRound; i <= maxRound; i++) {
+        rewards = new RewardInfo[](endRound - startRound + 1);
+        for (uint256 i = startRound; i <= endRound; i++) {
             (uint256 verifyReward, uint256 boostReward,) =
                 ILOVE20Mint(mintAddress).govRewardByAccount(tokenAddress, i, account);
-            rewards[i - minRound] = GovReward({
+            rewards[i - startRound] = RewardInfo({
                 round: i,
-                unminted: verifyReward + boostReward,
-                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(tokenAddress, i, account)
+                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(tokenAddress, i, account),
+                unminted: verifyReward + boostReward
             });
         }
     }
 
-    function actionRewardRoundsByAccount(
+    function actionRewardsByAccountByActionIdByRounds(
         address tokenAddress,
         address accountAddress,
         uint256 actionId,
         uint256 startRound,
         uint256 endRound
-    ) public view returns (uint256[] memory rounds, uint256[] memory rewards) {
+    ) public view returns (RewardInfo[] memory rewards) {
         require(startRound <= endRound, "startRound must be less than or equal to endRound");
-
-        uint256 currentRound = ILOVE20Mint(mintAddress).currentRound();
-        uint256 effectiveRoundEnd = endRound > currentRound ? currentRound : endRound;
         
-        // 首先计算有效奖励的数量
-        uint256 validCount = 0;
-        for (uint256 round = startRound; round <= effectiveRoundEnd; round++) {
-            (bool hasReward, ) = _getRewardForRound(tokenAddress, accountAddress, actionId, round);
-            if (hasReward) {
-                validCount++;
+        rewards = new RewardInfo[](endRound - startRound + 1);
+        
+        for (uint256 i = startRound; i <= endRound; i++) {
+            uint256 minted = 0;
+            uint256 unminted = 0;
+            
+            if (ILOVE20Verify(verifyAddress).isActionIdWithReward(tokenAddress, i, actionId)) {
+                minted = ILOVE20Mint(mintAddress).actionRewardMintedByAccount(
+                    tokenAddress,
+                    i,
+                    actionId,
+                    accountAddress
+                );
+                unminted = ILOVE20Mint(mintAddress).actionRewardByActionIdByAccount(
+                    tokenAddress,
+                    i,
+                    actionId,
+                    accountAddress
+                );                
             }
+            
+            rewards[i - startRound] = RewardInfo({
+                round: i,
+                minted: minted,
+                unminted: unminted
+            });
         }
         
-        // Create arrays with exact size
-        rounds = new uint256[](validCount);
-        rewards = new uint256[](validCount);
-        
-        // 填充数组
-        uint256 index = 0;
-        for (uint256 round = startRound; round <= effectiveRoundEnd; round++) {
-            (bool hasReward, uint256 reward) = _getRewardForRound(tokenAddress, accountAddress, actionId, round);
-            if (hasReward) {
-                rounds[index] = round;
-                rewards[index] = reward;
-                index++;
-            }
-        }
-        
-        return (rounds, rewards);
-    }
-    function _getRewardForRound(
-        address tokenAddress,
-        address accountAddress,
-        uint256 actionId,
-        uint256 round
-    ) private view returns (bool hasReward, uint256 reward) {
-        if (!ILOVE20Verify(verifyAddress).isActionIdWithReward(tokenAddress, round, actionId)) {
-            return (false, 0);
-        }
-        
-        reward = ILOVE20Mint(mintAddress).actionRewardByActionIdByAccount(
-            tokenAddress,
-            round,
-            actionId,
-            accountAddress
-        );
-        
-        return (reward > 0, reward);
+        return rewards;
     }
 }

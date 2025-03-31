@@ -3,9 +3,6 @@ round=7
 actionId=0
 
 
-echo "joinableActions"
-cast_call $dataViewerAddress "joinableActions(address,uint256)((uint256,uint256,uint256)[])" $tokenAddress $round
-
 echo "joinedActions"
 cast_call $dataViewerAddress "joinedActions(address,address)((uint256,uint256,uint256)[])" $tokenAddress $ACCOUNT_ADDRESS
 

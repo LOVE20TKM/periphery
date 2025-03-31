@@ -16,11 +16,11 @@ contract DeployUniswapV2 is Script {
     function run(address factory, address WETH) external {
         _checkParams(factory, WETH);
 
-        uint256 gasLimit = 50_000_000;
-        uint256 gasPrice = 3 * 10 ** 9;
+        // uint256 gasLimit = 50_000_000;
+        // uint256 gasPrice = 3 * 10 ** 9;
 
-        vm.txGasPrice(gasPrice);
-        vm.deal(msg.sender, gasLimit * gasPrice);
+        // vm.txGasPrice(gasPrice);
+        // vm.deal(msg.sender, gasLimit * gasPrice);
 
         // Paid: 0.001591183704402696 ETH (2414728 gas * 0.658949457 gwei)
         vm.broadcast();

@@ -34,22 +34,7 @@ contract LOVE20DataViewerTest is Test {
         mockMint = new MockILOVE20Mint();
 
         // Deploy the contract under test
-        viewer = new LOVE20DataViewer(initSetter);
-    }
-
-    // Test setInitSetter function
-    function testSetInitSetter() public {
-        address newSetter = address(0x123);
-        viewer.setInitSetter(newSetter);
-        assertEq(viewer.initSetter(), newSetter, "InitSetter should be updated");
-    }
-
-    // Test that only initSetter can call setInitSetter
-    function testOnlyInitSetterCanSetInitSetter() public {
-        address nonSetter = address(0x456);
-        vm.prank(nonSetter);
-        vm.expectRevert("msg.sender is not initSetter");
-        viewer.setInitSetter(address(0x789));
+        viewer = new LOVE20DataViewer();
     }
 
     // Test init function
@@ -153,19 +138,6 @@ contract LOVE20DataViewerTest is Test {
         assertEq(pairInfo.pairReserveParentToken, 0, "Incorrect pair reserve parent token");
     }
 
-    // Test joinableActions function
-    function testJoinableActions() public {
-        viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
-
-        JoinableAction[] memory actions = viewer.joinableActions(address(mockERC20), 1);
-        assertEq(actions.length, 2, "Should return two JoinableActions");
-        assertEq(actions[0].actionId, 1, "First actionId should be 1");
-        assertEq(actions[0].votesNum, 100, "First votesNum should be 100");
-        assertEq(actions[0].joinedAmount, 1000, "First joinedAmount should be 1000");
-        assertEq(actions[1].actionId, 2, "Second actionId should be 2");
-        assertEq(actions[1].votesNum, 200, "Second votesNum should be 200");
-        assertEq(actions[1].joinedAmount, 2000, "Second joinedAmount should be 2000");
-    }
 
     // Test joinedActions function
     function testJoinedActions() public {
@@ -209,10 +181,12 @@ contract LOVE20DataViewerTest is Test {
         assertEq(verified.length, 2, "Should return two VerifiedAddresses");
         assertEq(verified[0].account, address(0x1), "First account should be 0x1");
         assertEq(verified[0].score, 50, "First score should be 50");
-        assertEq(verified[0].reward, 25, "First reward should be 25");
+        assertEq(verified[0].unminted, 25, "First reward should be 25");
+        assertEq(verified[0].minted, 50, "First minted should be 50");
         assertEq(verified[1].account, address(0x2), "Second account should be 0x2");
         assertEq(verified[1].score, 50, "Second score should be 50");
-        assertEq(verified[1].reward, 50, "Second reward should be 50");
+        assertEq(verified[1].unminted, 50, "Second reward should be 50");
+        assertEq(verified[1].minted, 0, "Second minted should be 0");
     }
 
     // Test verificationInfosByAction function
@@ -255,9 +229,9 @@ contract LOVE20DataViewerTest is Test {
     function testGovRewardsByAccountByRounds() public {
         viewer.init(address(mockLaunch), address(mockSubmit), address(mockVote), address(mockJoin), address(mockVerify), address(mockMint));
 
-        GovReward[] memory rewards = viewer.govRewardsByAccountByRounds(address(mockERC20), address(this), 1, 2);
+        RewardInfo[] memory rewards = viewer.govRewardsByAccountByRounds(address(mockERC20), address(this), 1, 2);
 
-        assertEq(rewards.length, 2, "Should return two GovReward");
+        assertEq(rewards.length, 2, "Should return two RewardInfo");
         assertEq(rewards[0].round, 1, "First round should be 1");
         assertEq(rewards[0].minted, 50, "First minted should be 50");
         assertEq(rewards[0].unminted, 100, "First unminted should be 100");
@@ -270,21 +244,21 @@ contract LOVE20DataViewerTest is Test {
         uint256 actionId = 2;
         uint256 roundStart = 1;
         uint256 roundEnd = 2;
-         (uint256[] memory rounds, uint256[] memory rewards) = viewer.actionRewardRoundsByAccount(address(mockERC20), address(0x1), actionId, roundStart, roundEnd);
-        assertEq(rounds.length, 1, "Should return two rounds");
-        assertEq(rewards.length, 1, "Should return two rewards");
-        assertEq(rounds[0], 1, "First round should be 1");
-        assertEq(rewards[0], 25, "First reward should be 25");
+         RewardInfo[] memory rewards = viewer.actionRewardsByAccountByActionIdByRounds(address(mockERC20), address(0x1), actionId, roundStart, roundEnd);
+        assertEq(rewards.length, 2, "Should return two rewards");
+        assertEq(rewards[0].minted, 50, "First reward should be 50");
+        assertEq(rewards[0].unminted, 25, "First reward should be 25");
+        assertEq(rewards[1].minted, 50, "Second reward should be 50");
+        assertEq(rewards[1].unminted, 25, "Second reward should be 25");
 
         // Test case 2: Valid actionId, roundEnd is equal to currentRound
         roundStart = 0;
         roundEnd = 1;
-        (rounds, rewards) = viewer.actionRewardRoundsByAccount(address(mockERC20), address(0x1), actionId, roundStart, roundEnd);
-        assertEq(rounds.length, 2, "Should return two rounds");
+        rewards = viewer.actionRewardsByAccountByActionIdByRounds(address(mockERC20), address(0x1), actionId, roundStart, roundEnd);
         assertEq(rewards.length, 2, "Should return two rewards");
-        assertEq(rounds[0], 0, "First round should be 0");
-        assertEq(rounds[1], 1, "Second round should be 1");
-        assertEq(rewards[0], 25, "First reward should be 25");
-        assertEq(rewards[1], 25, "Second reward should be 25");
+        assertEq(rewards[0].minted, 50, "First reward should be 25");
+        assertEq(rewards[0].unminted, 25, "First reward should be 25");
+        assertEq(rewards[1].minted, 50, "Second reward should be 50");
+        assertEq(rewards[1].unminted, 25, "Second reward should be 25");
     }
 }   

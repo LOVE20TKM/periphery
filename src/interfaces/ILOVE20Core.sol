@@ -129,6 +129,13 @@ interface ILOVE20Mint {
         view
         returns (uint256);
 
+    function actionRewardMintedByAccount(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId,
+        address account
+    ) external view returns (uint256);
+
     function rewardAvailable(
         address tokenAddress
     ) external view returns (uint256);

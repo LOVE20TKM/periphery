@@ -11,14 +11,13 @@ contract DeployDataViewer is Script {
         address submitAddress_,
         address voteAddress_,
         address joinAddress_,
-        // address randomAddress_, // Removed randomAddress parameter
         address verifyAddress_,
         address mintAddress_
     ) external {
         console.log("Deploying DataViewer...");
 
         vm.broadcast();
-        LOVE20DataViewer dataViewer = new LOVE20DataViewer(msg.sender);
+        LOVE20DataViewer dataViewer = new LOVE20DataViewer();
 
         vm.broadcast();
         dataViewer.init(launchAddress_, submitAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_);
