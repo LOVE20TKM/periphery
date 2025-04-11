@@ -22,8 +22,8 @@ struct ActionHead {
 }
 
 struct ActionBody {
-    // max token amount for staking
-    uint256 maxStake;
+    // min token amount for staking
+    uint256 minStake;
     // max random accounts for verification
     uint256 maxRandomAccounts;
     // contract must comply with IWhiteList. If not set, all users can join the action.

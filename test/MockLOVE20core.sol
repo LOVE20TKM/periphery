@@ -60,7 +60,7 @@ contract MockILOVE20Submit is ILOVE20Submit {
         ActionInfo memory actionInfo_ = ActionInfo({
             head: ActionHead({id: actionId, author: address(this), createAtBlock: block.number}),
             body: ActionBody({
-                maxStake: 1000, 
+                minStake: 10, 
                 maxRandomAccounts: 10, 
                 whiteList: new address[](1),
                 action: "test", 
