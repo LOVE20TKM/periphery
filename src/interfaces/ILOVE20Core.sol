@@ -43,14 +43,20 @@ struct ActionInfo {
 }
 
 interface ILOVE20Launch {
-    function launches(address tokenAddress) external view returns (LaunchInfo memory);
-    function tokenAddressBySymbol(string memory symbol) external view returns (address);
+    function launches(
+        address tokenAddress
+    ) external view returns (LaunchInfo memory);
+    function tokenAddressBySymbol(
+        string memory symbol
+    ) external view returns (address);
     function stakeAddress() external view returns (address);
 }
 
 interface ILOVE20Stake {
     function govVotesNum(address tokenAddress) external view returns (uint256);
-    function initialStakeRound(address tokenAddress) external view returns (uint256);
+    function initialStakeRound(
+        address tokenAddress
+    ) external view returns (uint256);
 }
 
 interface ILOVE20Submit {
@@ -65,29 +71,39 @@ interface ILOVE20Submit {
 }
 
 interface ILOVE20Vote {
-    function votesNums(address tokenAddress, uint256 round)
+    function votesNums(
+        address tokenAddress,
+        uint256 round
+    )
         external
         view
         returns (uint256[] memory actionIds, uint256[] memory votes);
 }
 
 interface ILOVE20Join {
-    function amountByActionId(address tokenAddress, uint256 actionId)
-        external
-        view
-        returns (uint256);
+    function currentRound() external view returns (uint256);
 
-    function actionIdsByAccount(address tokenAddress, address account) external view returns (uint256[] memory);
+    function amountByActionId(
+        address tokenAddress,
+        uint256 actionId
+    ) external view returns (uint256);
 
-    function amountByActionIdByAccount(address tokenAddress, uint256 actionId, address account)
-        external
-        view
-        returns (uint256);
+    function actionIdsByAccount(
+        address tokenAddress,
+        address account
+    ) external view returns (uint256[] memory);
 
-    function randomAccounts(address tokenAddress, uint256 round, uint256 actionId)
-        external
-        view
-        returns (address[] memory);
+    function amountByActionIdByAccount(
+        address tokenAddress,
+        uint256 actionId,
+        address account
+    ) external view returns (uint256);
+
+    function randomAccounts(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (address[] memory);
 
     function verificationInfo(
         address tokenAddress,
@@ -97,16 +113,18 @@ interface ILOVE20Join {
 }
 
 interface ILOVE20Verify {
+    function scoreByActionIdByAccount(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId,
+        address account
+    ) external view returns (uint256);
 
-    function scoreByActionIdByAccount(address tokenAddress, uint256 round, uint256 actionId, address account)
-        external
-        view
-        returns (uint256);
-
-    function isActionIdWithReward(address tokenAddress, uint256 round, uint256 actionId)
-        external
-        view
-        returns (bool);
+    function isActionIdWithReward(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (bool);
 }
 
 interface ILOVE20Mint {
@@ -119,15 +137,20 @@ interface ILOVE20Mint {
         address accountAddress
     ) external view returns (uint256);
 
-    function govRewardByAccount(address tokenAddress, uint256 round, address accountAddress)
+    function govRewardByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    )
         external
         view
         returns (uint256 verifyReward, uint256 boostReward, uint256 burnReward);
 
-    function govRewardMintedByAccount(address tokenAddress, uint256 round, address accountAddress)
-        external
-        view
-        returns (uint256);
+    function govRewardMintedByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    ) external view returns (uint256);
 
     function actionRewardMintedByAccount(
         address tokenAddress,
@@ -149,7 +172,10 @@ interface LOVE20Token {
     function stAddress() external view returns (address);
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
 }
 
 interface ILOVE20SLToken {
@@ -161,7 +187,10 @@ interface ILOVE20SLToken {
 }
 
 interface IUniswapV2Pair {
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function getReserves()
+        external
+        view
+        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
     function token0() external view returns (address);
     function token1() external view returns (address);
 }
