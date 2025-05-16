@@ -52,6 +52,19 @@ struct GovData {
     uint256 rewardAvailable;
 }
 
+struct VerifyingAction {
+    ActionInfo action;
+    uint256 votesNum;
+    uint256 verificationScore;
+    uint256 myVotesNum;
+}
+
+struct MyVerifyingAction {
+    ActionInfo action;
+    uint256 myVotesNum;
+    uint256 totalVotesNum;
+}
+
 struct VerifiedAddress {
     address account;
     uint256 score;
@@ -210,7 +223,7 @@ contract LOVE20DataViewer {
 
     //---------------- Action related functions ----------------
 
-    function joinableActionDetailsWithJoinedInfos(
+    function joinableActions(
         address tokenAddress,
         uint256 round,
         address account
@@ -340,6 +353,78 @@ contract LOVE20DataViewer {
             }
         }
         return 0;
+    }
+
+    function verifyingActions(
+        address tokenAddress,
+        uint256 round,
+        address account
+    ) external view returns (VerifyingAction[] memory) {
+        // 1. get action ids and votes num
+        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(
+            voteAddress
+        ).votesNums(tokenAddress, round);
+
+        // 2. get action infos
+        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
+            .actionInfosByIds(tokenAddress, actionIds);
+
+        // 3. get verification scores
+        VerifyingAction[] memory actions = new VerifyingAction[](
+            actionIds.length
+        );
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            actions[i] = VerifyingAction({
+                action: actionInfos[i],
+                votesNum: votes[i],
+                verificationScore: ILOVE20Verify(verifyAddress).scoreByActionId(
+                    tokenAddress,
+                    round,
+                    actionIds[i]
+                ),
+                myVotesNum: ILOVE20Vote(voteAddress)
+                    .votesNumByAccountByActionId(
+                        tokenAddress,
+                        round,
+                        account,
+                        actionIds[i]
+                    )
+            });
+        }
+
+        return actions;
+    }
+
+    function verifingActionsByAccount(
+        address tokenAddress,
+        uint256 round,
+        address account
+    ) external view returns (MyVerifyingAction[] memory) {
+        // 1. get action ids and total votes num
+        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(
+            voteAddress
+        ).votesNumsByAccount(tokenAddress, round, account);
+
+        // 2. get action infos
+        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
+            .actionInfosByIds(tokenAddress, actionIds);
+
+        // 3. get my votes num and total votes num
+        MyVerifyingAction[] memory myActions = new MyVerifyingAction[](
+            actionIds.length
+        );
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            myActions[i] = MyVerifyingAction({
+                action: actionInfos[i],
+                totalVotesNum: ILOVE20Vote(voteAddress).votesNumByActionId(
+                    tokenAddress,
+                    round,
+                    actionIds[i]
+                ),
+                myVotesNum: votes[i]
+            });
+        }
+        return myActions;
     }
 
     //---------------- Gov related functions ----------------

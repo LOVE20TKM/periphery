@@ -121,6 +121,51 @@ contract MockILOVE20Vote is ILOVE20Vote {
         actionIds[1] = 2;
         votes[1] = 200;
     }
+
+    function votesNumByActionId(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external pure override returns (uint256) {
+        tokenAddress;
+        round;
+        actionId;
+        return 100;
+    }
+
+    function votesNumsByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    )
+        external
+        pure
+        override
+        returns (uint256[] memory actionIds, uint256[] memory votes)
+    {
+        tokenAddress;
+        round;
+        accountAddress;
+        actionIds = new uint256[](2);
+        votes = new uint256[](2);
+        actionIds[0] = 1;
+        votes[0] = 100;
+        actionIds[1] = 2;
+        votes[1] = 200;
+    }
+
+    function votesNumByAccountByActionId(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress,
+        uint256 actionId
+    ) external pure override returns (uint256) {
+        tokenAddress;
+        round;
+        accountAddress;
+        actionId;
+        return 100;
+    }
 }
 
 // Mock ILOVE20Join interface
@@ -220,6 +265,17 @@ contract MockILOVE20Verify is ILOVE20Verify {
         uint256
     ) external pure override returns (bool) {
         return true;
+    }
+
+    function scoreByActionId(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external pure override returns (uint256) {
+        tokenAddress;
+        round;
+        actionId;
+        return 50;
     }
 }
 

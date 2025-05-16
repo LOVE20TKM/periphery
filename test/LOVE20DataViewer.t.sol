@@ -271,7 +271,7 @@ contract LOVE20DataViewerTest is Test {
         assertEq(actions[0].stakedAmount, 500, "stakedAmount should be 500");
     }
 
-    // Test joinableActionDetailsWithJoinedInfos function
+    // Test joinableActions function
     function testJoinableActionDetailsWithJoinedInfos() public {
         viewer.init(
             address(mockLaunch),
@@ -285,11 +285,7 @@ contract LOVE20DataViewerTest is Test {
         (
             JoinableActionDetail[] memory joinableActionDetails,
             JoinedAction[] memory joinedActions
-        ) = viewer.joinableActionDetailsWithJoinedInfos(
-                address(mockERC20),
-                1,
-                address(this)
-            );
+        ) = viewer.joinableActions(address(mockERC20), 1, address(this));
         assertEq(joinedActions.length, 1, "Should return one JoinedAction");
         assertEq(joinedActions[0].action.head.id, 1, "actionId should be 1");
         assertEq(
@@ -331,6 +327,106 @@ contract LOVE20DataViewerTest is Test {
             joinableActionDetails[1].joinedAmount,
             2000,
             "joinedAmount should be 2000"
+        );
+    }
+
+    // test verifingActions function
+    function testVerifingActions() public {
+        viewer.init(
+            address(mockLaunch),
+            address(mockSubmit),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
+
+        VerifyingAction[] memory actions = viewer.verifyingActions(
+            address(mockERC20),
+            1,
+            address(this)
+        );
+
+        // Verify array length
+        assertEq(actions.length, 2, "Should return two VerifyingActions");
+
+        // Verify first Action
+        assertEq(actions[0].action.head.id, 1, "First action id should be 1");
+        assertEq(actions[0].votesNum, 100, "First action votes should be 100");
+        assertEq(
+            actions[0].verificationScore,
+            50,
+            "First action verification score should be 50"
+        );
+        assertEq(
+            actions[0].myVotesNum,
+            100,
+            "My votes for first action should be 100"
+        );
+
+        // Verify second Action
+        assertEq(actions[1].action.head.id, 2, "Second action id should be 2");
+        assertEq(actions[1].votesNum, 200, "Second action votes should be 200");
+        assertEq(
+            actions[1].verificationScore,
+            50,
+            "Second action verification score should be 50"
+        );
+        assertEq(
+            actions[1].myVotesNum,
+            100,
+            "My votes for second action should be 100"
+        );
+    }
+
+    // Test verifingActionsByAccount function
+    function testVerifingActionsByAccount() public {
+        viewer.init(
+            address(mockLaunch),
+            address(mockSubmit),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
+
+        MyVerifyingAction[] memory myActions = viewer.verifingActionsByAccount(
+            address(mockERC20),
+            1,
+            address(this)
+        );
+
+        // Verify array length
+        assertEq(myActions.length, 2, "Should return two MyVerifyingActions");
+
+        // Verify first Action
+        assertEq(myActions[0].action.head.id, 1, "First action id should be 1");
+        assertEq(
+            myActions[0].myVotesNum,
+            100,
+            "My votes for first action should be 100"
+        );
+        assertEq(
+            myActions[0].totalVotesNum,
+            100,
+            "Total votes for first action should be 100"
+        );
+
+        // Verify second Action
+        assertEq(
+            myActions[1].action.head.id,
+            2,
+            "Second action id should be 2"
+        );
+        assertEq(
+            myActions[1].myVotesNum,
+            200,
+            "My votes for second action should be 200"
+        );
+        assertEq(
+            myActions[1].totalVotesNum,
+            100,
+            "Total votes for second action should be 100"
         );
     }
 

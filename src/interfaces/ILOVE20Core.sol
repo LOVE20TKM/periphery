@@ -78,6 +78,28 @@ interface ILOVE20Vote {
         external
         view
         returns (uint256[] memory actionIds, uint256[] memory votes);
+
+    function votesNumByActionId(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (uint256);
+
+    function votesNumsByAccount(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress
+    )
+        external
+        view
+        returns (uint256[] memory actionIds, uint256[] memory votes);
+
+    function votesNumByAccountByActionId(
+        address tokenAddress,
+        uint256 round,
+        address accountAddress,
+        uint256 actionId
+    ) external view returns (uint256);
 }
 
 interface ILOVE20Join {
@@ -113,6 +135,12 @@ interface ILOVE20Join {
 }
 
 interface ILOVE20Verify {
+    function scoreByActionId(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (uint256);
+
     function scoreByActionIdByAccount(
         address tokenAddress,
         uint256 round,
