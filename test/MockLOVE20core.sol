@@ -14,7 +14,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
         stakeAddress = _stakeAddress;
     }
 
-    function launches(
+    function launchInfo(
         address
     ) external view override returns (LaunchInfo memory launchInfo_) {
         return
@@ -37,6 +37,17 @@ contract MockILOVE20Launch is ILOVE20Launch {
     ) external view override returns (address) {
         symbol;
         return address(parentTokenAddress);
+    }
+
+    function contribute(
+        address tokenAddress,
+        uint256 parentTokenAmount,
+        address to
+    ) external virtual override {
+        // Mock implementation - just store values for testing
+        tokenAddress;
+        parentTokenAmount;
+        to;
     }
 }
 
@@ -225,26 +236,13 @@ contract MockILOVE20Join is ILOVE20Join {
         return "Verified Information";
     }
 
-    function verificationInfosByAccount(
-        address tokenAddress,
-        uint256 actionId,
-        address account
-    ) external view returns (string[] memory verificationInfos) {
-        ActionInfo memory actionInfo = ILOVE20Submit(_submitAddress).actionInfo(
-            tokenAddress,
-            actionId
-        );
-        verificationInfos = new string[](
-            actionInfo.body.verificationKeys.length
-        );
-        for (uint256 i = 0; i < actionInfo.body.verificationKeys.length; i++) {
-            verificationInfos[i] = ILOVE20Join(_joinAddress).verificationInfo(
-                tokenAddress,
-                account,
-                actionInfo.body.verificationKeys[i]
-            );
-        }
-        return verificationInfos;
+    function verificationInfoByRound(
+        address,
+        address,
+        string memory,
+        uint256
+    ) external pure override returns (string memory) {
+        return "Verified Information";
     }
 }
 

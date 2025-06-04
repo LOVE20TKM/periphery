@@ -124,7 +124,7 @@ contract LOVE20DataViewer {
         view
         returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
     {
-        launchInfo = ILOVE20Launch(launchAddress).launches(tokenAddress);
+        launchInfo = ILOVE20Launch(launchAddress).launchInfo(tokenAddress);
         address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
         LOVE20Token love20 = LOVE20Token(tokenAddress);
         tokenInfo = TokenInfo({
@@ -523,10 +523,11 @@ contract LOVE20DataViewer {
                 verificationInfos[i].infos = new string[](keysLength);
                 for (uint256 j = 0; j < keysLength; j++) {
                     verificationInfos[i].infos[j] = ILOVE20Join(joinAddress)
-                        .verificationInfo(
+                        .verificationInfoByRound(
                             tokenAddress,
                             accounts[i],
-                            actionInfo.body.verificationKeys[j]
+                            actionInfo.body.verificationKeys[j],
+                            round
                         );
                 }
             } else {

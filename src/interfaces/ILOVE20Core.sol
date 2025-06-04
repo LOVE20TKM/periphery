@@ -43,13 +43,18 @@ struct ActionInfo {
 }
 
 interface ILOVE20Launch {
-    function launches(
+    function launchInfo(
         address tokenAddress
     ) external view returns (LaunchInfo memory);
     function tokenAddressBySymbol(
         string memory symbol
     ) external view returns (address);
     function stakeAddress() external view returns (address);
+    function contribute(
+        address tokenAddress,
+        uint256 parentTokenAmount,
+        address to
+    ) external;
 }
 
 interface ILOVE20Stake {
@@ -131,6 +136,13 @@ interface ILOVE20Join {
         address tokenAddress,
         address accountAddress,
         string memory verificationKey
+    ) external view returns (string memory);
+
+    function verificationInfoByRound(
+        address tokenAddress,
+        address accountAddress,
+        string memory verificationKey,
+        uint256 round
     ) external view returns (string memory);
 }
 
