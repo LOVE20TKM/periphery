@@ -68,8 +68,8 @@ struct MyVerifyingAction {
 struct VerifiedAddress {
     address account;
     uint256 score;
-    uint256 minted;
-    uint256 unminted;
+    uint256 reward;
+    bool isMinted;
 }
 
 struct VerificationInfo {
@@ -79,12 +79,13 @@ struct VerificationInfo {
 
 struct RewardInfo {
     uint256 round;
-    uint256 minted;
-    uint256 unminted;
+    uint256 reward;
+    bool isMinted;
 }
 
 contract LOVE20DataViewer {
     address public launchAddress;
+    address public stakeAddress;
     address public submitAddress;
     address public voteAddress;
     address public joinAddress;
@@ -97,6 +98,7 @@ contract LOVE20DataViewer {
 
     function init(
         address launchAddress_,
+        address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
         address joinAddress_,
@@ -106,6 +108,7 @@ contract LOVE20DataViewer {
         require(!initialized, "Already initialized");
 
         launchAddress = launchAddress_;
+        stakeAddress = stakeAddress_;
         submitAddress = submitAddress_;
         voteAddress = voteAddress_;
         joinAddress = joinAddress_;
@@ -116,6 +119,175 @@ contract LOVE20DataViewer {
     }
 
     //---------------- Token related functions ----------------
+    function tokensByPage(
+        uint256 start,
+        uint256 end
+    ) external view returns (address[] memory tokens) {
+        uint256 totalTokens = ILOVE20Launch(launchAddress).tokensCount();
+        require(start <= end, "Invalid range");
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).tokensAtIndex(start + i);
+        }
+    }
+
+    function childTokensByPage(
+        address parentTokenAddress,
+        uint256 start,
+        uint256 end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress).childTokensCount(
+            parentTokenAddress
+        );
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).childTokensAtIndex(
+                parentTokenAddress,
+                start + i
+            );
+        }
+    }
+
+    function launchingTokensByPage(
+        uint start,
+        uint end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress)
+            .launchingTokensCount();
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).launchingTokensAtIndex(
+                start + i
+            );
+        }
+    }
+
+    function launchedTokensByPage(
+        uint start,
+        uint end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress)
+            .launchedTokensCount();
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).launchedTokensAtIndex(
+                start + i
+            );
+        }
+    }
+
+    function launchingChildTokensByPage(
+        address parentTokenAddress,
+        uint start,
+        uint end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress)
+            .launchingChildTokensCount(parentTokenAddress);
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress)
+                .launchingChildTokensAtIndex(parentTokenAddress, start + i);
+        }
+    }
+
+    function launchedChildTokensByPage(
+        address parentTokenAddress,
+        uint start,
+        uint end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress)
+            .launchedChildTokensCount(parentTokenAddress);
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).launchedChildTokensAtIndex(
+                parentTokenAddress,
+                start + i
+            );
+        }
+    }
+
+    function participatedTokensByPage(
+        address account,
+        uint start,
+        uint end
+    ) external view returns (address[] memory tokens) {
+        require(start <= end, "Invalid range");
+
+        uint256 totalTokens = ILOVE20Launch(launchAddress)
+            .participatedTokensCount(account);
+        if (totalTokens == 0) {
+            return new address[](0);
+        }
+        require(start < totalTokens, "Out of range");
+        if (end >= totalTokens) {
+            end = totalTokens - 1;
+        }
+
+        tokens = new address[](end - start + 1);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            tokens[i] = ILOVE20Launch(launchAddress).participatedTokensAtIndex(
+                account,
+                start + i
+            );
+        }
+    }
+
+    //---------------- Token Detail related functions ----------------
 
     function tokenDetail(
         address tokenAddress
@@ -124,15 +296,18 @@ contract LOVE20DataViewer {
         view
         returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
     {
+        if (tokenAddress == address(0)) {
+            return (tokenInfo, launchInfo);
+        }
+
         launchInfo = ILOVE20Launch(launchAddress).launchInfo(tokenAddress);
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
-        LOVE20Token love20 = LOVE20Token(tokenAddress);
+        ILOVE20Token love20 = ILOVE20Token(tokenAddress);
         tokenInfo = TokenInfo({
             tokenAddress: tokenAddress,
             name: love20.name(),
             symbol: love20.symbol(),
             decimals: love20.decimals(),
-            parentTokenSymbol: LOVE20Token(launchInfo.parentTokenAddress)
+            parentTokenSymbol: ILOVE20Token(launchInfo.parentTokenAddress)
                 .symbol(),
             slAddress: love20.slAddress(),
             stAddress: love20.stAddress(),
@@ -148,15 +323,18 @@ contract LOVE20DataViewer {
     )
         external
         view
-        returns (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos)
+        returns (
+            TokenInfo[] memory tokenInfos,
+            LaunchInfo[] memory launchInfos_
+        )
     {
         tokenInfos = new TokenInfo[](tokenAddresses.length);
-        launchInfos = new LaunchInfo[](tokenAddresses.length);
+        launchInfos_ = new LaunchInfo[](tokenAddresses.length);
         for (uint256 i = 0; i < tokenAddresses.length; i++) {
-            (tokenInfos[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
+            (tokenInfos[i], launchInfos_[i]) = tokenDetail(tokenAddresses[i]);
         }
 
-        return (tokenInfos, launchInfos);
+        return (tokenInfos, launchInfos_);
     }
 
     function tokenDetailBySymbol(
@@ -176,7 +354,7 @@ contract LOVE20DataViewer {
         address tokenAddress,
         address parentTokenAddress
     ) external view returns (PairInfoWithAccount memory pairInfo) {
-        address slAddress = LOVE20Token(tokenAddress).slAddress();
+        address slAddress = ILOVE20Token(tokenAddress).slAddress();
         address pairAddress;
         uint256 reserveToken;
         uint256 reserveParentToken;
@@ -201,18 +379,17 @@ contract LOVE20DataViewer {
         }
 
         // get other info
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
         pairInfo = PairInfoWithAccount({
             pairAddress: pairAddress,
-            balanceOfToken: LOVE20Token(tokenAddress).balanceOf(account),
-            balanceOfParentToken: LOVE20Token(parentTokenAddress).balanceOf(
+            balanceOfToken: ILOVE20Token(tokenAddress).balanceOf(account),
+            balanceOfParentToken: ILOVE20Token(parentTokenAddress).balanceOf(
                 account
             ),
-            allowanceOfToken: LOVE20Token(tokenAddress).allowance(
+            allowanceOfToken: ILOVE20Token(tokenAddress).allowance(
                 account,
                 stakeAddress
             ),
-            allowanceOfParentToken: LOVE20Token(parentTokenAddress).allowance(
+            allowanceOfParentToken: ILOVE20Token(parentTokenAddress).allowance(
                 account,
                 stakeAddress
             ),
@@ -221,7 +398,124 @@ contract LOVE20DataViewer {
         });
     }
 
+    //---------------- Launch related functions ----------------
+    function launchInfos(
+        address[] memory addresses
+    ) external view returns (LaunchInfo[] memory launchInfos_) {
+        launchInfos_ = new LaunchInfo[](addresses.length);
+        for (uint256 i = 0; i < addresses.length; i++) {
+            launchInfos_[i] = ILOVE20Launch(launchAddress).launchInfo(
+                addresses[i]
+            );
+        }
+        return launchInfos_;
+    }
+
+    //---------------- Vote related functions ----------------
+    function votesNums(
+        address tokenAddress,
+        uint256 round
+    ) public view returns (uint256[] memory actionIds, uint256[] memory votes) {
+        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
+        uint256 count = voteContract.votedActionIdsCount(tokenAddress, round);
+        actionIds = new uint256[](count);
+        votes = new uint256[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            actionIds[i] = voteContract.votedActionIdsAtIndex(
+                tokenAddress,
+                round,
+                i
+            );
+            votes[i] = voteContract.votesNumByActionId(
+                tokenAddress,
+                round,
+                actionIds[i]
+            );
+        }
+    }
+
+    function votesNumsByActionIds(
+        address tokenAddress,
+        uint256 round,
+        uint256[] memory actionIds
+    ) external view returns (uint256[] memory votes) {
+        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
+        uint256 count = actionIds.length;
+        votes = new uint256[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            votes[i] = voteContract.votesNumByActionId(
+                tokenAddress,
+                round,
+                actionIds[i]
+            );
+        }
+        return votes;
+    }
+
     //---------------- Action related functions ----------------
+
+    function actionInfosByIds(
+        address tokenAddress,
+        uint256[] memory actionIds // 将calldata改为memory
+    ) public view returns (ActionInfo[] memory) {
+        ActionInfo[] memory infos = new ActionInfo[](actionIds.length);
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            infos[i] = ILOVE20Submit(submitAddress).actionInfo(
+                tokenAddress,
+                actionIds[i]
+            );
+        }
+        return infos;
+    }
+
+    function actionInfosByPage(
+        address tokenAddress,
+        uint256 start,
+        uint256 end
+    ) external view returns (ActionInfo[] memory) {
+        require(start <= end, "Invalid range");
+        uint256 totalActions = ILOVE20Submit(submitAddress).actionsCount(
+            tokenAddress
+        );
+        if (totalActions == 0) {
+            return new ActionInfo[](0);
+        }
+        require(start < totalActions, "Out of range");
+        if (end >= totalActions) {
+            end = totalActions - 1;
+        }
+
+        ActionInfo[] memory actions = new ActionInfo[](end - start + 1);
+        for (uint256 i = 0; i < actions.length; i++) {
+            actions[i] = ILOVE20Submit(submitAddress).actionsAtIndex(
+                tokenAddress,
+                start + i
+            );
+        }
+        return actions;
+    }
+
+    function actionSubmits(
+        address tokenAddress,
+        uint256 round
+    ) external view returns (ActionSubmitInfo[] memory) {
+        uint256 count = ILOVE20Submit(submitAddress).actionSubmitsCount(
+            tokenAddress,
+            round
+        );
+        ActionSubmitInfo[] memory submits = new ActionSubmitInfo[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            submits[i] = ILOVE20Submit(submitAddress).actionSubmitsAtIndex(
+                tokenAddress,
+                round,
+                i
+            );
+        }
+        return submits;
+    }
 
     function joinableActions(
         address tokenAddress,
@@ -232,11 +526,14 @@ contract LOVE20DataViewer {
         view
         returns (JoinableActionDetail[] memory, JoinedAction[] memory)
     {
-        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(
-            voteAddress
-        ).votesNums(tokenAddress, round);
-        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
-            .actionInfosByIds(tokenAddress, actionIds);
+        (uint256[] memory actionIds, uint256[] memory votes) = votesNums(
+            tokenAddress,
+            round
+        );
+        ActionInfo[] memory actionInfos = actionInfosByIds(
+            tokenAddress,
+            actionIds
+        );
         JoinableActionDetail[]
             memory joinableActionDetails = new JoinableActionDetail[](
                 actionInfos.length
@@ -292,10 +589,7 @@ contract LOVE20DataViewer {
         )
     {
         uint256 round = ILOVE20Join(joinAddress).currentRound();
-        (joinableActionIds, votes) = ILOVE20Vote(voteAddress).votesNums(
-            tokenAddress,
-            round
-        );
+        (joinableActionIds, votes) = votesNums(tokenAddress, round);
         totalVotes = 0;
         for (uint256 i = 0; i < votes.length; i++) {
             totalVotes += votes[i];
@@ -313,8 +607,10 @@ contract LOVE20DataViewer {
         // get joined actions
         uint256[] memory actionIds = ILOVE20Join(joinAddress)
             .actionIdsByAccount(tokenAddress, account);
-        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
-            .actionInfosByIds(tokenAddress, actionIds);
+        ActionInfo[] memory actionInfos = actionInfosByIds(
+            tokenAddress,
+            actionIds
+        );
         JoinedAction[] memory actions = new JoinedAction[](actionIds.length);
 
         // append action infos and votes num
@@ -361,13 +657,16 @@ contract LOVE20DataViewer {
         address account
     ) external view returns (VerifyingAction[] memory) {
         // 1. get action ids and votes num
-        (uint256[] memory actionIds, uint256[] memory votes) = ILOVE20Vote(
-            voteAddress
-        ).votesNums(tokenAddress, round);
+        (uint256[] memory actionIds, uint256[] memory votes) = votesNums(
+            tokenAddress,
+            round
+        );
 
         // 2. get action infos
-        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
-            .actionInfosByIds(tokenAddress, actionIds);
+        ActionInfo[] memory actionInfos = actionInfosByIds(
+            tokenAddress,
+            actionIds
+        );
 
         // 3. get verification scores
         VerifyingAction[] memory actions = new VerifyingAction[](
@@ -406,8 +705,10 @@ contract LOVE20DataViewer {
         ).votesNumsByAccount(tokenAddress, round, account);
 
         // 2. get action infos
-        ActionInfo[] memory actionInfos = ILOVE20Submit(submitAddress)
-            .actionInfosByIds(tokenAddress, actionIds);
+        ActionInfo[] memory actionInfos = actionInfosByIds(
+            tokenAddress,
+            actionIds
+        );
 
         // 3. get my votes num and total votes num
         MyVerifyingAction[] memory myActions = new MyVerifyingAction[](
@@ -432,10 +733,9 @@ contract LOVE20DataViewer {
     function govData(
         address tokenAddress
     ) external view returns (GovData memory govData_) {
-        LOVE20Token love20 = LOVE20Token(tokenAddress);
-        uint256 slAmount = LOVE20Token(love20.slAddress()).totalSupply();
+        ILOVE20Token love20 = ILOVE20Token(tokenAddress);
+        uint256 slAmount = ILOVE20Token(love20.slAddress()).totalSupply();
 
-        address stakeAddress = ILOVE20Launch(launchAddress).stakeAddress();
         (uint256 tokenAmount, uint256 parentTokenAmount) = ILOVE20SLToken(
             love20.slAddress()
         ).tokenAmountsBySlAmount(slAmount);
@@ -446,7 +746,7 @@ contract LOVE20DataViewer {
         govData_ = GovData({
             govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
             slAmount: slAmount,
-            stAmount: LOVE20Token(love20.stAddress()).totalSupply(),
+            stAmount: ILOVE20Token(love20.stAddress()).totalSupply(),
             tokenAmountForSl: tokenAmount,
             parentTokenAmountForSl: parentTokenAmount,
             rewardAvailable: rewardAvailable
@@ -470,6 +770,13 @@ contract LOVE20DataViewer {
             accounts.length
         );
         for (uint256 i = 0; i < accounts.length; i++) {
+            (uint256 reward, bool isMinted) = ILOVE20Mint(mintAddress)
+                .actionRewardByActionIdByAccount(
+                    tokenAddress,
+                    round,
+                    actionId,
+                    accounts[i]
+                );
             verifiedAddresses[i] = VerifiedAddress({
                 account: accounts[i],
                 score: ILOVE20Verify(verifyAddress).scoreByActionIdByAccount(
@@ -478,19 +785,8 @@ contract LOVE20DataViewer {
                     actionId,
                     accounts[i]
                 ),
-                minted: ILOVE20Mint(mintAddress).actionRewardMintedByAccount(
-                    tokenAddress,
-                    round,
-                    actionId,
-                    accounts[i]
-                ),
-                unminted: ILOVE20Mint(mintAddress)
-                    .actionRewardByActionIdByAccount(
-                        tokenAddress,
-                        round,
-                        actionId,
-                        accounts[i]
-                    )
+                reward: reward,
+                isMinted: isMinted
             });
         }
         return verifiedAddresses;
@@ -580,24 +876,28 @@ contract LOVE20DataViewer {
 
         rewards = new RewardInfo[](endRound - startRound + 1);
         for (uint256 i = startRound; i <= endRound; i++) {
-            (uint256 verifyReward, uint256 boostReward, ) = ILOVE20Mint(
-                mintAddress
-            ).govRewardByAccount(tokenAddress, i, account);
-            rewards[i - startRound] = RewardInfo({
-                round: i,
-                minted: ILOVE20Mint(mintAddress).govRewardMintedByAccount(
+            (
+                uint256 verifyReward,
+                uint256 boostReward,
+                ,
+                bool isMinted
+            ) = ILOVE20Mint(mintAddress).govRewardByAccount(
                     tokenAddress,
                     i,
                     account
-                ),
-                unminted: verifyReward + boostReward
+                );
+
+            rewards[i - startRound] = RewardInfo({
+                round: i,
+                reward: verifyReward + boostReward,
+                isMinted: isMinted
             });
         }
     }
 
     function actionRewardsByAccountByActionIdByRounds(
         address tokenAddress,
-        address accountAddress,
+        address account,
         uint256 actionId,
         uint256 startRound,
         uint256 endRound
@@ -610,8 +910,8 @@ contract LOVE20DataViewer {
         rewards = new RewardInfo[](endRound - startRound + 1);
 
         for (uint256 i = startRound; i <= endRound; i++) {
-            uint256 minted = 0;
-            uint256 unminted = 0;
+            uint256 reward = 0;
+            bool isMinted = false;
 
             if (
                 ILOVE20Verify(verifyAddress).isActionIdWithReward(
@@ -620,25 +920,19 @@ contract LOVE20DataViewer {
                     actionId
                 )
             ) {
-                minted = ILOVE20Mint(mintAddress).actionRewardMintedByAccount(
-                    tokenAddress,
-                    i,
-                    actionId,
-                    accountAddress
-                );
-                unminted = ILOVE20Mint(mintAddress)
+                (reward, isMinted) = ILOVE20Mint(mintAddress)
                     .actionRewardByActionIdByAccount(
                         tokenAddress,
                         i,
                         actionId,
-                        accountAddress
+                        account
                     );
             }
 
             rewards[i - startRound] = RewardInfo({
                 round: i,
-                minted: minted,
-                unminted: unminted
+                reward: reward,
+                isMinted: isMinted
             });
         }
 

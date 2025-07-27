@@ -9,6 +9,7 @@ contract DeployHub is Script {
     function run(
         address WETHAddress_,
         address launchAddress_,
+        address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
         address joinAddress_,
@@ -24,6 +25,7 @@ contract DeployHub is Script {
         hub.init(
             WETHAddress_,
             launchAddress_,
+            stakeAddress_,
             submitAddress_,
             voteAddress_,
             joinAddress_,

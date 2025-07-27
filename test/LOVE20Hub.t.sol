@@ -131,6 +131,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -185,6 +186,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -197,6 +199,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -210,6 +213,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -260,6 +264,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -278,6 +283,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -296,6 +302,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -314,6 +321,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -341,6 +349,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),
@@ -375,6 +384,7 @@ contract LOVE20HubTest is Test {
         hub.init(
             address(mockWETH),
             address(mockLaunch),
+            address(mockStake),
             address(mockSubmit),
             address(mockVote),
             address(mockJoin),

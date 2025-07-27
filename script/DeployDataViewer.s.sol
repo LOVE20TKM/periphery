@@ -8,6 +8,7 @@ import {LOVE20DataViewer} from "../src/LOVE20DataViewer.sol";
 contract DeployDataViewer is Script {
     function run(
         address launchAddress_,
+        address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
         address joinAddress_,
@@ -20,7 +21,15 @@ contract DeployDataViewer is Script {
         LOVE20DataViewer dataViewer = new LOVE20DataViewer();
 
         vm.broadcast();
-        dataViewer.init(launchAddress_, submitAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_);
+        dataViewer.init(
+            launchAddress_,
+            stakeAddress_,
+            submitAddress_,
+            voteAddress_,
+            joinAddress_,
+            verifyAddress_,
+            mintAddress_
+        );
 
         console.log("DataViewer deployed at", address(dataViewer));
     }

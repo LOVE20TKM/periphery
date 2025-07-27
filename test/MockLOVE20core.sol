@@ -25,6 +25,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
                 launchAmount: 500000,
                 startBlock: 100,
                 secondHalfStartBlock: 5100,
+                endBlock: 1000,
                 hasEnded: false,
                 participantCount: 100,
                 totalContributed: 1000000,
@@ -49,6 +50,86 @@ contract MockILOVE20Launch is ILOVE20Launch {
         parentTokenAmount;
         to;
     }
+
+    function tokensCount() external pure override returns (uint256) {
+        return 2;
+    }
+
+    function tokensAtIndex(uint256) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function childTokensCount(
+        address
+    ) external pure override returns (uint256) {
+        return 2;
+    }
+
+    function childTokensAtIndex(
+        address,
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function launchingTokensCount() external pure override returns (uint256) {
+        return 1;
+    }
+
+    function launchingTokensAtIndex(
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function launchedTokensCount() external pure override returns (uint256) {
+        return 1;
+    }
+
+    function launchedTokensAtIndex(
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function launchingChildTokensCount(
+        address
+    ) external pure override returns (uint256) {
+        return 1;
+    }
+
+    function launchingChildTokensAtIndex(
+        address,
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function launchedChildTokensCount(
+        address
+    ) external pure override returns (uint256) {
+        return 1;
+    }
+
+    function launchedChildTokensAtIndex(
+        address,
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
+
+    function participatedTokensCount(
+        address
+    ) external pure override returns (uint256) {
+        return 1;
+    }
+
+    function participatedTokensAtIndex(
+        address,
+        uint256
+    ) external view override returns (address) {
+        return parentTokenAddress;
+    }
 }
 
 contract MockILOVE20Stake is ILOVE20Stake {
@@ -65,10 +146,51 @@ contract MockILOVE20Stake is ILOVE20Stake {
         tokenAddress;
         return 100;
     }
+
+    function stakeLiquidity(
+        address tokenAddress,
+        uint256 tokenAmountForLP,
+        uint256 parentTokenAmountForLP,
+        uint256 promisedWaitingPhases,
+        address to
+    ) external pure returns (uint256 govVotesAdded, uint256 slAmountAdded) {
+        tokenAddress;
+        tokenAmountForLP;
+        parentTokenAmountForLP;
+        promisedWaitingPhases;
+        to;
+        return (100, 200);
+    }
 }
 
 // Mock ILOVE20Submit interface
 contract MockILOVE20Submit is ILOVE20Submit {
+    function actionsCount(address) external pure override returns (uint256) {
+        return 3;
+    }
+
+    function actionsAtIndex(
+        address,
+        uint256 index
+    ) external view override returns (ActionInfo memory) {
+        return this.actionInfo(address(0), index);
+    }
+
+    function actionSubmitsCount(
+        address,
+        uint256
+    ) external pure override returns (uint256) {
+        return 2;
+    }
+
+    function actionSubmitsAtIndex(
+        address,
+        uint256,
+        uint256 index
+    ) external view override returns (ActionSubmitInfo memory) {
+        return ActionSubmitInfo({actionId: index, submitter: address(this)});
+    }
+
     function actionInfo(
         address tokenAddress,
         uint256 actionId
@@ -90,49 +212,19 @@ contract MockILOVE20Submit is ILOVE20Submit {
             body: ActionBody({
                 minStake: 10,
                 maxRandomAccounts: 10,
-                whiteList: new address[](1),
-                action: "test",
-                consensus: "test",
+                whiteListAddress: tokenAddress,
+                title: "test",
                 verificationRule: "test",
                 verificationKeys: verificationKeys,
                 verificationInfoGuides: verificationInfoGuides
             })
         });
-        actionInfo_.body.whiteList[0] = tokenAddress;
         return actionInfo_;
-    }
-
-    function actionInfosByIds(
-        address tokenAddress,
-        uint256[] calldata actionIds
-    ) external view override returns (ActionInfo[] memory) {
-        ActionInfo[] memory actionInfos = new ActionInfo[](actionIds.length);
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            actionInfos[i] = this.actionInfo(tokenAddress, actionIds[i]);
-        }
-        return actionInfos;
     }
 }
 
 // Mock ILOVE20Vote interface
 contract MockILOVE20Vote is ILOVE20Vote {
-    function votesNums(
-        address,
-        uint256
-    )
-        external
-        pure
-        override
-        returns (uint256[] memory actionIds, uint256[] memory votes)
-    {
-        actionIds = new uint256[](2);
-        votes = new uint256[](2);
-        actionIds[0] = 1;
-        votes[0] = 100;
-        actionIds[1] = 2;
-        votes[1] = 200;
-    }
-
     function votesNumByActionId(
         address tokenAddress,
         uint256 round,
@@ -147,7 +239,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
     function votesNumsByAccount(
         address tokenAddress,
         uint256 round,
-        address accountAddress
+        address account
     )
         external
         pure
@@ -156,7 +248,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
     {
         tokenAddress;
         round;
-        accountAddress;
+        account;
         actionIds = new uint256[](2);
         votes = new uint256[](2);
         actionIds[0] = 1;
@@ -168,14 +260,58 @@ contract MockILOVE20Vote is ILOVE20Vote {
     function votesNumByAccountByActionId(
         address tokenAddress,
         uint256 round,
-        address accountAddress,
+        address account,
         uint256 actionId
-    ) external pure override returns (uint256) {
+    ) external pure returns (uint256) {
         tokenAddress;
         round;
-        accountAddress;
+        account;
         actionId;
         return 100;
+    }
+
+    function votedActionIdsCount(
+        address tokenAddress,
+        uint256 round
+    ) external pure returns (uint256) {
+        tokenAddress;
+        round;
+        return 3;
+    }
+
+    function votedActionIdsAtIndex(
+        address tokenAddress,
+        uint256 round,
+        uint256 index
+    ) external pure returns (uint256) {
+        tokenAddress;
+        round;
+        index;
+        return 1;
+    }
+
+    function accountVotedActionIdsCount(
+        address tokenAddress,
+        uint256 round,
+        address account
+    ) external pure returns (uint256) {
+        tokenAddress;
+        round;
+        account;
+        return 2;
+    }
+
+    function accountVotedActionIdsAtIndex(
+        address tokenAddress,
+        uint256 round,
+        address account,
+        uint256 index
+    ) external pure returns (uint256) {
+        tokenAddress;
+        round;
+        account;
+        index;
+        return 200;
     }
 }
 
@@ -288,13 +424,13 @@ contract MockILOVE20Mint is ILOVE20Mint {
         uint256,
         uint256,
         address account
-    ) external pure override returns (uint256) {
+    ) external pure override returns (uint256 reward, bool isMinted) {
         if (account == address(0x1)) {
-            return 25;
+            return (25, true);
         } else if (account == address(0x2)) {
-            return 50;
+            return (50, false);
         }
-        return 0;
+        return (0, false);
     }
 
     function actionRewardMintedByAccount(
@@ -315,8 +451,8 @@ contract MockILOVE20Mint is ILOVE20Mint {
         address,
         uint256,
         address
-    ) external pure override returns (uint256, uint256, uint256) {
-        return (50, 50, 50);
+    ) external pure override returns (uint256, uint256, uint256, bool) {
+        return (50, 50, 50, true);
     }
 
     function govRewardMintedByAccount(
@@ -333,7 +469,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
 }
 
 // Mock IERC20 interface
-contract MockERC20 is LOVE20Token, ILOVE20SLToken, IUniswapV2Pair {
+contract MockERC20 is ILOVE20Token, ILOVE20SLToken, IUniswapV2Pair {
     string private _symbol;
     address private _uniswapV2Pair;
 
@@ -352,6 +488,10 @@ contract MockERC20 is LOVE20Token, ILOVE20SLToken, IUniswapV2Pair {
 
     function symbol() external view override returns (string memory) {
         return _symbol;
+    }
+
+    function parentTokenAddress() external view returns (address) {
+        return address(this);
     }
 
     function slAddress() external view returns (address) {
