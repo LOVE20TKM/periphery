@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.19;
+pragma solidity =0.8.17;
 
 struct LaunchInfo {
     address parentTokenAddress;
@@ -230,6 +230,7 @@ interface ILOVE20Join {
     function verificationInfoByRound(
         address tokenAddress,
         address account,
+        uint256 actionId,
         string memory verificationKey,
         uint256 round
     ) external view returns (string memory);
