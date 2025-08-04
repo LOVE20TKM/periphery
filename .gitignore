@@ -3,16 +3,7 @@ cache/
 out/
 
 # Ignores development broadcast logs
-!/broadcast
-# anvil
-/broadcast/*/31337/
-# sepolia
-/broadcast/*/11155111/
-# bsc testnet
-/broadcast/*/97/
-/broadcast/**/dry-run/
-# thinkium801
-/broadcast/**/801/
+/broadcast/
 
 # Flattened contracts
 /flatten
