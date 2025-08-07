@@ -37,7 +37,7 @@ contract MockILOVE20Stake is ILOVE20Stake {
         return (100, 200);
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function PROMISED_WAITING_PHASES_MAX() external pure returns (uint256) {
         return 10;
     }
@@ -83,7 +83,7 @@ contract MockILOVE20Stake is ILOVE20Stake {
         return 1000;
     }
 
-    // IPhase接口实现
+    // IPhase interface implementation
     function originBlocks() external pure returns (uint256) {
         return 100;
     }

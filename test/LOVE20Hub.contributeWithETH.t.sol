@@ -33,7 +33,7 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
     function setUp() public {
         // Deploy Mock contracts
         mockWETH = new MockWETH9();
-        mockERC20 = new MockLOVE20Token("TEST");
+        mockERC20 = new MockLOVE20Token("TEST", address(0));
         mockStake = new MockILOVE20Stake();
         mockSubmit = new MockILOVE20Submit();
         mockLaunch = new MockILOVE20LaunchForHub(

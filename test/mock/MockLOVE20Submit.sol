@@ -65,7 +65,7 @@ contract MockILOVE20Submit is ILOVE20Submit {
         return actionInfo_;
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function MAX_VERIFICATION_KEY_LENGTH() external pure returns (uint256) {
         return 50;
     }
@@ -93,7 +93,7 @@ contract MockILOVE20Submit is ILOVE20Submit {
         return true;
     }
 
-    // IPhase接口实现
+    // IPhase interface implementation
     function originBlocks() external pure returns (uint256) {
         return 100;
     }

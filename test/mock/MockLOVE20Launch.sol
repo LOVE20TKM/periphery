@@ -6,7 +6,7 @@ import "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title MockILOVE20Launch
- * @dev LOVE20Launch接口的模拟实现
+ * @dev LOVE20Launch interface mock implementation
  */
 contract MockILOVE20Launch is ILOVE20Launch {
     address public parentTokenAddress;
@@ -134,7 +134,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return parentTokenAddress;
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function FIRST_PARENT_TOKEN_FUNDRAISING_GOAL()
         external
         pure
@@ -262,7 +262,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
 
 /**
  * @title MockILOVE20LaunchForHub
- * @dev 扩展的Launch mock，支持contribute函数的完整实现
+ * @dev Extended Launch mock, supporting full contribute function implementation
  */
 contract MockILOVE20LaunchForHub is MockILOVE20Launch {
     uint256 public lastContributeAmount;
@@ -288,7 +288,7 @@ contract MockILOVE20LaunchForHub is MockILOVE20Launch {
         lastContributeAmount = amount;
         lastContributeTo = to;
 
-        // 实际转移WETH到launch合约
+        // Actually transfer WETH to launch contract
         if (wethAddress != address(0)) {
             IERC20 WETH = IERC20(wethAddress);
             WETH.transferFrom(msg.sender, address(this), amount);

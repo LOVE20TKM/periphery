@@ -32,7 +32,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
     function setUp() public {
         // Deploy Mock contracts
         mockWETH = new MockWETH9();
-        mockERC20 = new MockLOVE20Token("TEST");
+        mockERC20 = new MockLOVE20Token("TEST", address(0));
         mockStake = new MockILOVE20Stake();
         mockSubmit = new MockILOVE20Submit();
         mockLaunch = new MockILOVE20Launch(
@@ -393,12 +393,18 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
     function testStakeLiquidityMinimalAmounts() public {
         _initializeHub();
 
+        // Create a mock token with zero reserves for first liquidity addition
+        MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
+                0, // tokenReserve
+                0 // parentTokenReserve
+            );
+
         uint256 minAmount = 1; // Minimal amount
         _setupUserTokenBalances(user, minAmount, minAmount);
 
         vm.prank(user);
         (uint256 govVotesAdded, uint256 slAmountAdded) = hub.stakeLiquidity(
-            tokenAddress,
+            address(mockTokenWithZeroReserves),
             minAmount,
             minAmount,
             0, // Minimum value set to 0

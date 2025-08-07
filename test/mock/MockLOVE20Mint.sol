@@ -60,7 +60,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 50;
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function ACTION_REWARD_MIN_VOTE_PER_THOUSAND()
         external
         pure

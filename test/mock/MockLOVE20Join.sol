@@ -65,7 +65,7 @@ contract MockILOVE20Join is ILOVE20Join {
         return "Verified Information";
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function JOIN_END_PHASE_BLOCKS() external pure returns (uint256) {
         return 500;
     }
@@ -93,7 +93,7 @@ contract MockILOVE20Join is ILOVE20Join {
         // Mock implementation
     }
 
-    // IPhase接口实现
+    // IPhase interface implementation
     function originBlocks() external pure returns (uint256) {
         return 100;
     }

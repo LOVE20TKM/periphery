@@ -7,15 +7,23 @@ import "../../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 /**
  * @title MockLOVE20Token
- * @dev LOVE20Token接口的mock实现
+ * @dev Mock implementation of LOVE20Token interface
  */
 contract MockLOVE20Token is ILOVE20Token {
     string private _symbol;
     address private _slAddress;
+    address private _parentTokenAddress;
 
-    constructor(string memory symbol_) {
+    constructor(string memory symbol_, address parentTokenAddress_) {
         _symbol = symbol_;
-        _slAddress = address(new MockLOVE20SLToken());
+        _parentTokenAddress = parentTokenAddress_;
+        // Create an SL token that matches the current token address
+        _slAddress = address(
+            new MockLOVE20SLTokenWithTokens(
+                address(this), // token address
+                _parentTokenAddress // parent token address
+            )
+        );
     }
 
     function name() external pure override returns (string memory) {
@@ -31,7 +39,7 @@ contract MockLOVE20Token is ILOVE20Token {
     }
 
     function parentTokenAddress() external view returns (address) {
-        return address(this);
+        return _parentTokenAddress;
     }
 
     function slAddress() external view returns (address) {
@@ -90,7 +98,7 @@ contract MockLOVE20Token is ILOVE20Token {
         return address(this);
     }
 
-    // 添加缺失的ILOVE20Token接口实现
+    // Add missing interface methods
     function burn(uint256 amount) external pure {
         amount; // Mock implementation
     }
@@ -116,7 +124,7 @@ contract MockLOVE20Token is ILOVE20Token {
         return amount * 2; // Return double as parent token amount for testing
     }
 
-    // 添加缺失的接口方法
+    // Add missing interface methods
     function maxSupply() external pure returns (uint256) {
         return 10000000 ether;
     }
@@ -132,13 +140,20 @@ contract MockLOVE20Token is ILOVE20Token {
 
 /**
  * @title MockLOVE20SLToken
- * @dev LOVE20SLToken接口的mock实现
+ * @dev Mock implementation of LOVE20SLToken interface
  */
 contract MockLOVE20SLToken is ILOVE20SLToken {
     address private _uniswapV2Pair;
 
     constructor() {
-        _uniswapV2Pair = address(new MockUniswapV2Pair(10000, 20000));
+        _uniswapV2Pair = address(
+            new MockUniswapV2Pair(
+                0,
+                0,
+                address(0x1111111111111111111111111111111111111111),
+                address(0x2222222222222222222222222222222222222222)
+            )
+        );
     }
 
     function tokenAmountsBySlAmount(
@@ -182,7 +197,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         view
         returns (uint256, uint256, uint256)
     {
-        return (10000, 20000, block.timestamp);
+        return (0, 0, block.timestamp);
     }
 
     function withdrawFee(address) external pure {
@@ -196,7 +211,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         return (1000, 500);
     }
 
-    // 添加缺失的接口方法
+    // Add missing interface methods
     function name() external pure returns (string memory) {
         return "Mock SL Token";
     }
@@ -257,15 +272,24 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
 
 /**
  * @title MockUniswapV2Pair
- * @dev IUniswapV2Pair接口的mock实现
+ * @dev IUniswapV2Pair interface mock implementation
  */
 contract MockUniswapV2Pair is IUniswapV2Pair {
     uint256 private _tokenReserve;
     uint256 private _parentTokenReserve;
+    address private _token0;
+    address private _token1;
 
-    constructor(uint256 tokenReserve, uint256 parentTokenReserve) {
+    constructor(
+        uint256 tokenReserve,
+        uint256 parentTokenReserve,
+        address token0Address,
+        address token1Address
+    ) {
         _tokenReserve = tokenReserve;
         _parentTokenReserve = parentTokenReserve;
+        _token0 = token0Address;
+        _token1 = token1Address;
     }
 
     function getReserves()
@@ -277,14 +301,14 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
     }
 
     function token0() external view returns (address) {
-        return address(this);
+        return _token0;
     }
 
     function token1() external view returns (address) {
-        return address(this);
+        return _token1;
     }
 
-    // 添加所有缺失的IUniswapV2Pair接口实现
+    // Add all missing IUniswapV2Pair interface implementations
     function DOMAIN_SEPARATOR() external pure returns (bytes32) {
         return keccak256("MockUniswapV2Pair");
     }
@@ -395,7 +419,7 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
 
 /**
  * @title MockERC20WithZeroParent
- * @dev 父代币地址为零地址的mock合约
+ * @dev Mock contract with zero parent token address
  */
 contract MockERC20WithZeroParent {
     function parentTokenAddress() external pure returns (address) {
@@ -405,7 +429,7 @@ contract MockERC20WithZeroParent {
 
 /**
  * @title MockERC20WithReserves
- * @dev 自定义储备量的mock合约
+ * @dev Mock contract with custom reserves
  */
 contract MockERC20WithReserves {
     uint256 private _tokenReserve;
@@ -417,7 +441,7 @@ contract MockERC20WithReserves {
         _tokenReserve = tokenReserve;
         _parentTokenReserve = parentTokenReserve;
         _uniswapV2Pair = address(this);
-        _parentTokenAddress = address(new MockParentToken()); // 创建一个新的父代币实例
+        _parentTokenAddress = address(new MockParentToken()); // Create a new parent token instance
     }
 
     function parentTokenAddress() external view returns (address) {
@@ -472,7 +496,7 @@ contract MockERC20WithReserves {
 
 /**
  * @title MockParentToken
- * @dev 父代币的mock实现
+ * @dev Mock implementation of parent token
  */
 contract MockParentToken {
     // Basic ERC20 functions (simplified implementation)
@@ -494,5 +518,136 @@ contract MockParentToken {
 
     function approve(address, uint256) external pure returns (bool) {
         return true; // Always succeed
+    }
+}
+
+/**
+ * @title MockLOVE20SLTokenWithTokens
+ * @dev Mock implementation of LOVE20SLToken interface with specific token address
+ */
+contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
+    address private _uniswapV2Pair;
+    address private _tokenAddress;
+    address private _parentTokenAddress;
+
+    constructor(address tokenAddr, address parentTokenAddr) {
+        _tokenAddress = tokenAddr;
+        _parentTokenAddress = parentTokenAddr;
+        _uniswapV2Pair = address(
+            new MockUniswapV2Pair(0, 0, tokenAddr, parentTokenAddr)
+        );
+    }
+
+    function tokenAmountsBySlAmount(
+        uint256 slAmount
+    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+        slAmount; // Mock implementation
+        return (1000000000000000000000000, 1000000000000000000000000);
+    }
+
+    function slAmountsByTokenAmount(
+        uint256 tokenAmount,
+        uint256 parentTokenAmount
+    ) external pure returns (uint256 slAmount) {
+        tokenAmount;
+        parentTokenAmount; // Mock implementation
+        return 1000000000000000000000000;
+    }
+
+    function totalSupply() external pure returns (uint256) {
+        return 1000000 ether;
+    }
+
+    function transfer(address, uint256) external pure returns (bool) {
+        return true;
+    }
+
+    function transferFrom(
+        address,
+        address,
+        uint256
+    ) external pure returns (bool) {
+        return true;
+    }
+
+    function uniswapV2Pair() external view returns (address) {
+        return _uniswapV2Pair;
+    }
+
+    function uniswapV2PairReserves()
+        external
+        view
+        returns (uint256, uint256, uint256)
+    {
+        return (0, 0, block.timestamp);
+    }
+
+    function withdrawFee(address) external pure {
+        // Mock implementation
+    }
+
+    function burn(
+        address to
+    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+        to; // Mock implementation
+        return (1000, 500);
+    }
+
+    // Add missing interface methods
+    function name() external pure returns (string memory) {
+        return "Mock SL Token";
+    }
+
+    function symbol() external pure returns (string memory) {
+        return "MSL";
+    }
+
+    function decimals() external pure returns (uint8) {
+        return 18;
+    }
+
+    function balanceOf(address) external pure returns (uint256) {
+        return 1000000 ether;
+    }
+
+    function allowance(address, address) external pure returns (uint256) {
+        return 1000000 ether;
+    }
+
+    function approve(address, uint256) external pure returns (bool) {
+        return true;
+    }
+
+    function minter() external pure returns (address) {
+        return address(0x123);
+    }
+
+    function tokenAddress() external view returns (address) {
+        return _tokenAddress;
+    }
+
+    function parentTokenAddress() external view returns (address) {
+        return _parentTokenAddress;
+    }
+
+    function MAX_WITHDRAWABLE_TO_FEE_RATIO() external pure returns (uint256) {
+        return 10;
+    }
+
+    function mint(address) external pure returns (uint256) {
+        return 1000;
+    }
+
+    function tokenAmounts()
+        external
+        pure
+        returns (
+            uint256 tokenAmount,
+            uint256 parentTokenAmount,
+            uint256 feeTokenAmount,
+            uint256 feeParentTokenAmount
+        )
+    {
+        return (1000000000000000000000000, 1000000000000000000000000, 0, 0);
     }
 }

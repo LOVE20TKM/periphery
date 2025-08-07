@@ -97,7 +97,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
         return 200;
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function canVote(
         address tokenAddress,
         address account
@@ -107,7 +107,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
         return true;
     }
 
-    // IPhase接口实现
+    // IPhase interface implementation
     function originBlocks() external pure returns (uint256) {
         return 100;
     }

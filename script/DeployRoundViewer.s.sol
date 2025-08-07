@@ -3,11 +3,10 @@ pragma solidity =0.8.17;
 
 import "../lib/forge-std/src/Script.sol";
 import {Test, console} from "../lib/forge-std/src/Test.sol";
-import {LOVE20DataViewer} from "../src/LOVE20DataViewer.sol";
+import {LOVE20RoundViewer} from "../src/LOVE20RoundViewer.sol";
 
-contract DeployDataViewer is Script {
+contract DeployRoundViewer is Script {
     function run(
-        address launchAddress_,
         address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
@@ -15,14 +14,13 @@ contract DeployDataViewer is Script {
         address verifyAddress_,
         address mintAddress_
     ) external {
-        console.log("Deploying DataViewer...");
+        console.log("Deploying RoundViewer...");
 
         vm.broadcast();
-        LOVE20DataViewer dataViewer = new LOVE20DataViewer();
+        LOVE20RoundViewer roundViewer = new LOVE20RoundViewer();
 
         vm.broadcast();
-        dataViewer.init(
-            launchAddress_,
+        roundViewer.init(
             stakeAddress_,
             submitAddress_,
             voteAddress_,
@@ -31,6 +29,6 @@ contract DeployDataViewer is Script {
             mintAddress_
         );
 
-        console.log("DataViewer deployed at", address(dataViewer));
+        console.log("RoundViewer deployed at", address(roundViewer));
     }
 }

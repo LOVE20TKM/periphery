@@ -36,7 +36,7 @@ contract MockILOVE20Verify is ILOVE20Verify {
         return 50;
     }
 
-    // 添加缺失的接口实现
+    // Add missing interface implementations
     function RANDOM_SEED_UPDATE_MIN_PER_TEN_THOUSAND()
         external
         pure
@@ -53,7 +53,7 @@ contract MockILOVE20Verify is ILOVE20Verify {
         return 30;
     }
 
-    // IPhase接口实现
+    // IPhase interface implementation
     function originBlocks() external pure returns (uint256) {
         return 100;
     }
