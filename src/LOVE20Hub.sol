@@ -1,28 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.17;
 
-import "./interfaces/ILOVE20Core.sol";
+import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IUniswapV2Pair} from "../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import {IETH20} from "./interfaces/IETH20.sol";
+import {ILOVE20Launch} from "./interfaces/ILOVE20Launch.sol";
+import {ILOVE20Stake} from "./interfaces/ILOVE20Stake.sol";
+import {ILOVE20SLToken} from "./interfaces/ILOVE20SLToken.sol";
+import {ILOVE20Token} from "./interfaces/ILOVE20Token.sol";
+import {ILOVE20HubEvents, ILOVE20Hub} from "./interfaces/ILOVE20Hub.sol";
 
-interface IWETH9 {
-    function deposit() external payable;
-    function withdraw(uint256 wad) external;
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 value) external returns (bool);
-    function approve(address spender, uint256 value) external returns (bool);
-}
-
-interface IERC20 {
-    function approve(address spender, uint256 value) external returns (bool);
-    function transfer(address to, uint256 value) external returns (bool);
-    function balanceOf(address account) external view returns (uint256);
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool);
-}
-
-contract LOVE20Hub {
+contract LOVE20Hub is ILOVE20HubEvents, ILOVE20Hub {
     address public WETHAddress;
     address public launchAddress;
     address public stakeAddress;
@@ -33,13 +21,6 @@ contract LOVE20Hub {
     address public mintAddress;
 
     bool public initialized;
-
-    event ContributeWithETH(
-        address indexed tokenAddress,
-        address indexed to,
-        uint256 ethAmount,
-        uint256 wethAmount
-    );
 
     constructor() {}
 
@@ -67,20 +48,23 @@ contract LOVE20Hub {
         initialized = true;
     }
 
-    function contributeWithETH(
+    function contributeFirstTokenWithETH(
         address tokenAddress,
         address to
     ) external payable {
-        require(initialized, "Hub not initialized");
         require(msg.value > 0, "Must send ETH");
         require(tokenAddress != address(0), "Invalid token address");
         require(to != address(0), "Invalid recipient address");
 
-        IWETH9(WETHAddress).deposit{value: msg.value}();
+        IETH20(WETHAddress).deposit{value: msg.value}();
         IERC20(WETHAddress).approve(launchAddress, msg.value);
         ILOVE20Launch(launchAddress).contribute(tokenAddress, msg.value, to);
 
-        emit ContributeWithETH(tokenAddress, to, msg.value, msg.value);
+        emit ContributeFirstTokenWithETH({
+            tokenAddress: tokenAddress,
+            to: to,
+            amount: msg.value
+        });
     }
 
     // Get reserves of the pair contract
@@ -142,10 +126,6 @@ contract LOVE20Hub {
             } else {
                 uint256 tokenAmountOptimal = (parentTokenAmountDesired *
                     tokenReserve) / parentTokenReserve;
-                require(
-                    tokenAmountOptimal <= tokenAmountDesired,
-                    "LOVE20Hub: OPTIMAL_AMOUNT_EXCEEDED"
-                );
                 require(
                     tokenAmountOptimal >= tokenAmountMin,
                     "LOVE20Hub: INSUFFICIENT_TOKEN_AMOUNT"
@@ -220,5 +200,15 @@ contract LOVE20Hub {
                 promisedWaitingPhases,
                 to
             );
+
+        emit StakeLiquidity({
+            tokenAddress: tokenAddress,
+            to: to,
+            tokenAmountDesired: tokenAmount,
+            parentTokenAmountDesired: parentTokenAmount,
+            tokenAmountReal: optimalTokenAmount,
+            parentTokenAmountReal: optimalParentTokenAmount,
+            promisedWaitingPhases: promisedWaitingPhases
+        });
     }
 }

@@ -3,85 +3,19 @@ pragma solidity =0.8.17;
 
 import "forge-std/Test.sol";
 import "../src/LOVE20Hub.sol";
-import "../src/interfaces/ILOVE20Core.sol";
-import "./MockLOVE20core.sol";
+import "../src/interfaces/ILOVE20Hub.sol";
 
-// Mock WETH9 contract
-contract MockWETH9 {
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+import "./mock/MockWETH9.sol";
+import "./mock/MockLOVE20Launch.sol";
+import "./mock/MockLOVE20Stake.sol";
+import "./mock/MockLOVE20Submit.sol";
+import "./mock/MockLOVE20Vote.sol";
+import "./mock/MockLOVE20Join.sol";
+import "./mock/MockLOVE20Verify.sol";
+import "./mock/MockLOVE20Mint.sol";
+import "./mock/MockTokens.sol";
 
-    event Deposit(address indexed dst, uint256 wad);
-    event Withdrawal(address indexed src, uint256 wad);
-
-    function deposit() external payable {
-        balanceOf[msg.sender] += msg.value;
-        emit Deposit(msg.sender, msg.value);
-    }
-
-    function withdraw(uint256 wad) external {
-        require(balanceOf[msg.sender] >= wad, "Insufficient balance");
-        balanceOf[msg.sender] -= wad;
-        payable(msg.sender).transfer(wad);
-        emit Withdrawal(msg.sender, wad);
-    }
-
-    function transfer(address to, uint256 value) external returns (bool) {
-        require(balanceOf[msg.sender] >= value, "Insufficient balance");
-        balanceOf[msg.sender] -= value;
-        balanceOf[to] += value;
-        return true;
-    }
-
-    function approve(address spender, uint256 value) external returns (bool) {
-        allowance[msg.sender][spender] = value;
-        return true;
-    }
-
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool) {
-        require(balanceOf[from] >= value, "Insufficient balance");
-        require(allowance[from][msg.sender] >= value, "Insufficient allowance");
-
-        balanceOf[from] -= value;
-        balanceOf[to] += value;
-        allowance[from][msg.sender] -= value;
-        return true;
-    }
-}
-
-// Extended MockILOVE20Launch to support contribute function
-contract MockILOVE20LaunchForHub is MockILOVE20Launch {
-    uint256 public lastContributeAmount;
-    address public lastContributeToken;
-    address public lastContributeTo;
-
-    constructor(
-        address _parentTokenAddress,
-        address _stakeAddress
-    ) MockILOVE20Launch(_parentTokenAddress, _stakeAddress) {}
-
-    function contribute(
-        address tokenAddress,
-        uint256 amount,
-        address to
-    ) external override {
-        lastContributeToken = tokenAddress;
-        lastContributeAmount = amount;
-        lastContributeTo = to;
-
-        // Get WETH from Hub contract - use the actual WETH address from Hub
-        LOVE20Hub hub = LOVE20Hub(msg.sender);
-        address wethAddress = hub.WETHAddress();
-
-        IERC20(wethAddress).transferFrom(msg.sender, address(this), amount);
-    }
-}
-
-contract LOVE20HubTest is Test {
+contract LOVE20HubTest is ILOVE20HubEvents, Test {
     LOVE20Hub public hub;
     MockWETH9 public mockWETH;
     MockILOVE20LaunchForHub public mockLaunch;
@@ -91,23 +25,15 @@ contract LOVE20HubTest is Test {
     MockILOVE20Join public mockJoin;
     MockILOVE20Verify public mockVerify;
     MockILOVE20Mint public mockMint;
-    MockERC20 public mockERC20;
+    MockLOVE20Token public mockERC20;
 
     address public user = address(0x123);
     address public tokenAddress = address(0x456);
 
-    // Event declaration for testing
-    event ContributeWithETH(
-        address indexed tokenAddress,
-        address indexed to,
-        uint256 ethAmount,
-        uint256 wethAmount
-    );
-
     function setUp() public {
         // Deploy Mock contracts
         mockWETH = new MockWETH9();
-        mockERC20 = new MockERC20("TEST");
+        mockERC20 = new MockLOVE20Token("TEST");
         mockStake = new MockILOVE20Stake();
         mockSubmit = new MockILOVE20Submit();
         mockLaunch = new MockILOVE20LaunchForHub(
@@ -118,6 +44,9 @@ contract LOVE20HubTest is Test {
         mockJoin = new MockILOVE20Join(address(mockSubmit), address(mockJoin));
         mockVerify = new MockILOVE20Verify();
         mockMint = new MockILOVE20Mint();
+
+        // Set WETH address for mockLaunch
+        mockLaunch.setWethAddress(address(mockWETH));
 
         // Deploy Hub contract
         hub = new LOVE20Hub();
@@ -225,7 +154,10 @@ contract LOVE20HubTest is Test {
 
         // Test successful contribution
         vm.prank(user);
-        hub.contributeWithETH{value: contributeAmount}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: contributeAmount}(
+            tokenAddress,
+            user
+        );
 
         // Verify WETH balance
         assertEq(
@@ -252,13 +184,6 @@ contract LOVE20HubTest is Test {
         );
     }
 
-    function testContributeWithETHNotInitialized() public {
-        // Should fail when not initialized
-        vm.expectRevert("Hub not initialized");
-        vm.prank(user);
-        hub.contributeWithETH{value: 1 ether}(tokenAddress, user);
-    }
-
     function testContributeWithETHZeroValue() public {
         // Initialize Hub
         hub.init(
@@ -275,7 +200,7 @@ contract LOVE20HubTest is Test {
         // Sending 0 ETH should fail
         vm.expectRevert("Must send ETH");
         vm.prank(user);
-        hub.contributeWithETH{value: 0}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: 0}(tokenAddress, user);
     }
 
     function testContributeWithETHInvalidTokenAddress() public {
@@ -294,7 +219,7 @@ contract LOVE20HubTest is Test {
         // Invalid token address should fail
         vm.expectRevert("Invalid token address");
         vm.prank(user);
-        hub.contributeWithETH{value: 1 ether}(address(0), user);
+        hub.contributeFirstTokenWithETH{value: 1 ether}(address(0), user);
     }
 
     function testContributeWithETHInvalidRecipientAddress() public {
@@ -313,7 +238,10 @@ contract LOVE20HubTest is Test {
         // Invalid recipient address should fail
         vm.expectRevert("Invalid recipient address");
         vm.prank(user);
-        hub.contributeWithETH{value: 1 ether}(tokenAddress, address(0));
+        hub.contributeFirstTokenWithETH{value: 1 ether}(
+            tokenAddress,
+            address(0)
+        );
     }
 
     function testContributeWithETHEvent() public {
@@ -333,15 +261,13 @@ contract LOVE20HubTest is Test {
 
         // Test event emission
         vm.expectEmit(true, true, false, true);
-        emit ContributeWithETH(
-            tokenAddress,
-            user,
-            contributeAmount,
-            contributeAmount
-        );
+        emit ContributeFirstTokenWithETH(tokenAddress, user, contributeAmount);
 
         vm.prank(user);
-        hub.contributeWithETH{value: contributeAmount}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: contributeAmount}(
+            tokenAddress,
+            user
+        );
     }
 
     function testMultipleContributions() public {
@@ -362,11 +288,14 @@ contract LOVE20HubTest is Test {
 
         // First contribution
         vm.prank(user);
-        hub.contributeWithETH{value: firstAmount}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: firstAmount}(tokenAddress, user);
 
         // Second contribution
         vm.prank(user);
-        hub.contributeWithETH{value: secondAmount}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: secondAmount}(
+            tokenAddress,
+            user
+        );
 
         // Verify total WETH balance
         assertEq(
@@ -397,7 +326,7 @@ contract LOVE20HubTest is Test {
 
         // Execute contribution
         vm.prank(user);
-        hub.contributeWithETH{value: amount}(tokenAddress, user);
+        hub.contributeFirstTokenWithETH{value: amount}(tokenAddress, user);
 
         // Verify results
         assertEq(

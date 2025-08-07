@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.17;
 
-import "./interfaces/ILOVE20Core.sol";
+import {IUniswapV2Pair} from "../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import "./interfaces/ILOVE20Launch.sol";
+import "./interfaces/ILOVE20Token.sol";
+import "./interfaces/ILOVE20Stake.sol";
+import "./interfaces/ILOVE20SLToken.sol";
+import "./interfaces/ILOVE20Vote.sol";
+import "./interfaces/ILOVE20Submit.sol";
+import "./interfaces/ILOVE20Join.sol";
+import "./interfaces/ILOVE20Verify.sol";
+import "./interfaces/ILOVE20Mint.sol";
 
 struct TokenInfo {
     address tokenAddress;
@@ -24,23 +33,27 @@ struct PairInfoWithAccount {
     uint256 pairReserveParentToken;
 }
 
-struct JoinableAction {
-    uint256 actionId;
+struct VotingAction {
+    ActionInfo action;
+    address submitter;
     uint256 votesNum;
-    uint256 joinedAmount;
+    uint256 myVotesNum;
 }
 
-struct JoinableActionDetail {
+struct JoinableAction {
     ActionInfo action;
     uint256 votesNum;
+    bool hasReward;
     uint256 joinedAmount;
+    uint256 joinedAmountOfAccount;
 }
 
 struct JoinedAction {
     ActionInfo action;
-    uint256 stakedAmount;
     uint256 votesNum;
-    uint256 votePercent;
+    uint256 votePercentPerTenThousand;
+    bool hasReward;
+    uint256 joinedAmountOfAccount;
 }
 
 struct GovData {
@@ -57,12 +70,14 @@ struct VerifyingAction {
     uint256 votesNum;
     uint256 verificationScore;
     uint256 myVotesNum;
+    uint256 myVerificationScore;
 }
 
 struct MyVerifyingAction {
     ActionInfo action;
-    uint256 myVotesNum;
     uint256 totalVotesNum;
+    uint256 myVotesNum;
+    uint256 myVerificationScore;
 }
 
 struct VerifiedAddress {
@@ -296,9 +311,7 @@ contract LOVE20DataViewer {
         view
         returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
     {
-        if (tokenAddress == address(0)) {
-            return (tokenInfo, launchInfo);
-        }
+        require(tokenAddress != address(0), "Invalid token address");
 
         launchInfo = ILOVE20Launch(launchAddress).launchInfo(tokenAddress);
         ILOVE20Token love20 = ILOVE20Token(tokenAddress);
@@ -316,6 +329,18 @@ contract LOVE20DataViewer {
             )
         });
         return (tokenInfo, launchInfo);
+    }
+
+    function tokenDetailBySymbol(
+        string memory symbol
+    )
+        external
+        view
+        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
+    {
+        address tokenAddress = ILOVE20Launch(launchAddress)
+            .tokenAddressBySymbol(symbol);
+        return tokenDetail(tokenAddress);
     }
 
     function tokenDetails(
@@ -337,23 +362,12 @@ contract LOVE20DataViewer {
         return (tokenInfos, launchInfos_);
     }
 
-    function tokenDetailBySymbol(
-        string memory symbol
-    )
-        external
-        view
-        returns (TokenInfo memory tokenInfo, LaunchInfo memory launchInfo)
-    {
-        address tokenAddress = ILOVE20Launch(launchAddress)
-            .tokenAddressBySymbol(symbol);
-        return tokenDetail(tokenAddress);
-    }
-
     function tokenPairInfoWithAccount(
         address account,
-        address tokenAddress,
-        address parentTokenAddress
+        address tokenAddress
     ) external view returns (PairInfoWithAccount memory pairInfo) {
+        address parentTokenAddress = ILOVE20Token(tokenAddress)
+            .parentTokenAddress();
         address slAddress = ILOVE20Token(tokenAddress).slAddress();
         address pairAddress;
         uint256 reserveToken;
@@ -458,7 +472,7 @@ contract LOVE20DataViewer {
 
     function actionInfosByIds(
         address tokenAddress,
-        uint256[] memory actionIds // 将calldata改为memory
+        uint256[] memory actionIds
     ) public view returns (ActionInfo[] memory) {
         ActionInfo[] memory infos = new ActionInfo[](actionIds.length);
         for (uint256 i = 0; i < actionIds.length; i++) {
@@ -517,15 +531,47 @@ contract LOVE20DataViewer {
         return submits;
     }
 
+    function votingActions(
+        address tokenAddress,
+        uint256 round,
+        address account
+    ) external view returns (VotingAction[] memory) {
+        uint256 actionSubmitsCount = ILOVE20Submit(submitAddress)
+            .actionSubmitsCount(tokenAddress, round);
+        VotingAction[] memory votingActions_ = new VotingAction[](
+            actionSubmitsCount
+        );
+        for (uint256 i = 0; i < actionSubmitsCount; i++) {
+            ActionSubmitInfo memory _submitInfo = ILOVE20Submit(submitAddress)
+                .actionSubmitsAtIndex(tokenAddress, round, i);
+            votingActions_[i] = VotingAction({
+                action: ILOVE20Submit(submitAddress).actionInfo(
+                    tokenAddress,
+                    _submitInfo.actionId
+                ),
+                submitter: _submitInfo.submitter,
+                votesNum: ILOVE20Vote(voteAddress).votesNumByActionId(
+                    tokenAddress,
+                    round,
+                    _submitInfo.actionId
+                ),
+                myVotesNum: ILOVE20Vote(voteAddress)
+                    .votesNumByAccountByActionId(
+                        tokenAddress,
+                        round,
+                        account,
+                        _submitInfo.actionId
+                    )
+            });
+        }
+        return votingActions_;
+    }
+
     function joinableActions(
         address tokenAddress,
         uint256 round,
         address account
-    )
-        external
-        view
-        returns (JoinableActionDetail[] memory, JoinedAction[] memory)
-    {
+    ) external view returns (JoinableAction[] memory) {
         (uint256[] memory actionIds, uint256[] memory votes) = votesNums(
             tokenAddress,
             round
@@ -534,25 +580,31 @@ contract LOVE20DataViewer {
             tokenAddress,
             actionIds
         );
-        JoinableActionDetail[]
-            memory joinableActionDetails = new JoinableActionDetail[](
-                actionInfos.length
-            );
+        JoinableAction[] memory joinableActionDetails = new JoinableAction[](
+            actionInfos.length
+        );
         for (uint256 i = 0; i < actionInfos.length; i++) {
-            joinableActionDetails[i] = JoinableActionDetail({
+            joinableActionDetails[i] = JoinableAction({
                 action: actionInfos[i],
                 votesNum: votes[i],
+                hasReward: ILOVE20Mint(mintAddress).isActionIdWithReward(
+                    tokenAddress,
+                    round,
+                    actionIds[i]
+                ),
                 joinedAmount: ILOVE20Join(joinAddress).amountByActionId(
                     tokenAddress,
                     actionIds[i]
-                )
+                ),
+                joinedAmountOfAccount: ILOVE20Join(joinAddress)
+                    .amountByActionIdByAccount(
+                        tokenAddress,
+                        actionIds[i],
+                        account
+                    )
             });
         }
-        JoinedAction[] memory joinedActions_ = this.joinedActions(
-            tokenAddress,
-            account
-        );
-        return (joinableActionDetails, joinedActions_);
+        return joinableActionDetails;
     }
 
     function joinedActions(
@@ -613,29 +665,52 @@ contract LOVE20DataViewer {
         );
         JoinedAction[] memory actions = new JoinedAction[](actionIds.length);
 
+        // get current round
+        uint256 round = ILOVE20Join(joinAddress).currentRound();
+
         // append action infos and votes num
         for (uint256 i = 0; i < actionIds.length; i++) {
-            uint256 currentVotes = _findVotes(
+            actions[i] = _createJoinedAction(
+                tokenAddress,
+                account,
+                round,
+                actionIds[i],
+                actionInfos[i],
                 joinableActionIds,
                 votes,
-                actionIds[i]
+                totalVotes
             );
-
-            actions[i] = JoinedAction({
-                action: actionInfos[i],
-                stakedAmount: ILOVE20Join(joinAddress)
-                    .amountByActionIdByAccount(
-                        tokenAddress,
-                        actionIds[i],
-                        account
-                    ),
-                votesNum: currentVotes,
-                votePercent: totalVotes > 0
-                    ? (currentVotes * 10000) / totalVotes
-                    : 0
-            });
         }
         return actions;
+    }
+
+    function _createJoinedAction(
+        address tokenAddress,
+        address account,
+        uint256 round,
+        uint256 actionId,
+        ActionInfo memory actionInfo,
+        uint256[] memory joinableActionIds,
+        uint256[] memory votes,
+        uint256 totalVotes
+    ) internal view returns (JoinedAction memory) {
+        uint256 currentVotes = _findVotes(joinableActionIds, votes, actionId);
+
+        return
+            JoinedAction({
+                action: actionInfo,
+                votesNum: currentVotes,
+                votePercentPerTenThousand: totalVotes > 0
+                    ? (currentVotes * 10000) / totalVotes
+                    : 0,
+                hasReward: ILOVE20Mint(mintAddress).isActionIdWithReward(
+                    tokenAddress,
+                    round,
+                    actionId
+                ),
+                joinedAmountOfAccount: ILOVE20Join(joinAddress)
+                    .amountByActionIdByAccount(tokenAddress, actionId, account)
+            });
     }
 
     function _findVotes(
@@ -687,6 +762,13 @@ contract LOVE20DataViewer {
                         round,
                         account,
                         actionIds[i]
+                    ),
+                myVerificationScore: ILOVE20Verify(verifyAddress)
+                    .scoreByActionIdByAccount(
+                        tokenAddress,
+                        round,
+                        actionIds[i],
+                        account
                     )
             });
         }
@@ -694,7 +776,7 @@ contract LOVE20DataViewer {
         return actions;
     }
 
-    function verifingActionsByAccount(
+    function verifyingActionsByAccount(
         address tokenAddress,
         uint256 round,
         address account
@@ -722,7 +804,14 @@ contract LOVE20DataViewer {
                     round,
                     actionIds[i]
                 ),
-                myVotesNum: votes[i]
+                myVotesNum: votes[i],
+                myVerificationScore: ILOVE20Verify(verifyAddress)
+                    .scoreByActionIdByAccount(
+                        tokenAddress,
+                        round,
+                        actionIds[i],
+                        account
+                    )
             });
         }
         return myActions;
@@ -736,9 +825,12 @@ contract LOVE20DataViewer {
         ILOVE20Token love20 = ILOVE20Token(tokenAddress);
         uint256 slAmount = ILOVE20Token(love20.slAddress()).totalSupply();
 
-        (uint256 tokenAmount, uint256 parentTokenAmount) = ILOVE20SLToken(
-            love20.slAddress()
-        ).tokenAmountsBySlAmount(slAmount);
+        (
+            uint256 withdrawableTokenAmount,
+            uint256 withdrawableParentTokenAmount,
+            ,
+
+        ) = ILOVE20SLToken(love20.slAddress()).tokenAmounts();
         uint256 rewardAvailable = ILOVE20Mint(mintAddress).rewardAvailable(
             tokenAddress
         );
@@ -747,8 +839,8 @@ contract LOVE20DataViewer {
             govVotes: ILOVE20Stake(stakeAddress).govVotesNum(tokenAddress),
             slAmount: slAmount,
             stAmount: ILOVE20Token(love20.stAddress()).totalSupply(),
-            tokenAmountForSl: tokenAmount,
-            parentTokenAmountForSl: parentTokenAmount,
+            tokenAmountForSl: withdrawableTokenAmount,
+            parentTokenAmountForSl: withdrawableParentTokenAmount,
             rewardAvailable: rewardAvailable
         });
         return govData_;
@@ -856,6 +948,7 @@ contract LOVE20DataViewer {
             verificationInfos[i] = ILOVE20Join(joinAddress).verificationInfo(
                 tokenAddress,
                 account,
+                actionId,
                 actionInfo.body.verificationKeys[i]
             );
         }
@@ -915,7 +1008,7 @@ contract LOVE20DataViewer {
             bool isMinted = false;
 
             if (
-                ILOVE20Verify(verifyAddress).isActionIdWithReward(
+                ILOVE20Mint(mintAddress).isActionIdWithReward(
                     tokenAddress,
                     i,
                     actionId
@@ -938,5 +1031,77 @@ contract LOVE20DataViewer {
         }
 
         return rewards;
+    }
+
+    function estimatedActionRewardOfCurrentRound(
+        address tokenAddress
+    ) external view returns (uint256) {
+        uint256 realRound = ILOVE20Join(joinAddress).currentRound();
+        uint256 relativeRound = realRound -
+            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress);
+        uint256 leftReward = ILOVE20Mint(mintAddress).rewardAvailable(
+            tokenAddress
+        );
+
+        if (relativeRound > 0) {
+            bool isPreRewardPrepared = ILOVE20Mint(mintAddress)
+                .isRewardPrepared(tokenAddress, realRound - 1);
+            if (!isPreRewardPrepared) {
+                leftReward =
+                    (leftReward *
+                        (1000 -
+                            ILOVE20Mint(mintAddress)
+                                .ROUND_REWARD_GOV_PER_THOUSAND() -
+                            ILOVE20Mint(mintAddress)
+                                .ROUND_REWARD_ACTION_PER_THOUSAND())) /
+                    1000;
+            }
+        }
+
+        return
+            (leftReward *
+                ILOVE20Mint(mintAddress).ROUND_REWARD_ACTION_PER_THOUSAND()) /
+            1000;
+    }
+
+    function estimatedGovRewardOfCurrentRound(
+        address tokenAddress
+    ) external view returns (uint256) {
+        uint256 realRound = ILOVE20Vote(voteAddress).currentRound();
+        uint256 relativeRound = realRound -
+            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress);
+        uint256 leftReward = ILOVE20Mint(mintAddress).rewardAvailable(
+            tokenAddress
+        );
+
+        if (relativeRound > 0) {
+            leftReward =
+                (leftReward *
+                    (1000 -
+                        ILOVE20Mint(mintAddress)
+                            .ROUND_REWARD_GOV_PER_THOUSAND() -
+                        ILOVE20Mint(mintAddress)
+                            .ROUND_REWARD_ACTION_PER_THOUSAND())) /
+                1000;
+            if (relativeRound > 1) {
+                bool isPreRewardPrepared = ILOVE20Mint(mintAddress)
+                    .isRewardPrepared(tokenAddress, realRound - 2);
+                if (!isPreRewardPrepared) {
+                    leftReward =
+                        (leftReward *
+                            (1000 -
+                                ILOVE20Mint(mintAddress)
+                                    .ROUND_REWARD_GOV_PER_THOUSAND() -
+                                ILOVE20Mint(mintAddress)
+                                    .ROUND_REWARD_ACTION_PER_THOUSAND())) /
+                        1000;
+                }
+            }
+        }
+
+        return
+            (leftReward *
+                ILOVE20Mint(mintAddress).ROUND_REWARD_GOV_PER_THOUSAND()) /
+            1000;
     }
 }
