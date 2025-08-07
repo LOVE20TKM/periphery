@@ -590,53 +590,6 @@ contract LOVE20DataViewerTest is Test {
         assertEq(rewards[1].isMinted, false, "Second isMinted should be false");
     }
 
-    // Test launchInfos function
-    function testLaunchInfos() public view {
-        address[] memory addresses = new address[](2);
-        addresses[0] = address(mockERC20);
-        addresses[1] = address(mockERC20);
-
-        LaunchInfo[] memory launchInfos = viewer.launchInfos(addresses);
-
-        assertEq(launchInfos.length, 2, "Should return two LaunchInfo");
-
-        // 验证第一个 LaunchInfo
-        assertEq(
-            launchInfos[0].parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
-        assertEq(
-            launchInfos[0].parentTokenFundraisingGoal,
-            1000000,
-            "parentTokenFundraisingGoal should be 1000000"
-        );
-        assertEq(launchInfos[0].hasEnded, false, "hasEnded should be false");
-        assertEq(
-            launchInfos[0].participantCount,
-            100,
-            "participantCount should be 100"
-        );
-        assertEq(
-            launchInfos[0].totalContributed,
-            1000000,
-            "totalContributed should be 1000000"
-        );
-
-        // 验证第二个 LaunchInfo
-        assertEq(
-            launchInfos[1].parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
-        assertEq(
-            launchInfos[1].parentTokenFundraisingGoal,
-            1000000,
-            "parentTokenFundraisingGoal should be 1000000"
-        );
-        assertEq(launchInfos[1].hasEnded, false, "hasEnded should be false");
-    }
-
     // Test tokensByPage function
     function testTokensByPage() public view {
         // 测试正常范围
@@ -1007,39 +960,6 @@ contract LOVE20DataViewerTest is Test {
         assertEq(votes[0], 100, "First votes should be 100");
         assertEq(votes[1], 100, "Second votes should be 100");
         assertEq(votes[2], 100, "Third votes should be 100");
-    }
-
-    // Test votesNumsByActionIds function
-    function testVotesNumsByActionIds() public view {
-        uint256[] memory actionIds = new uint256[](3);
-        actionIds[0] = 1;
-        actionIds[1] = 2;
-        actionIds[2] = 3;
-
-        uint256[] memory votes = viewer.votesNumsByActionIds(
-            address(mockERC20),
-            1,
-            actionIds
-        );
-
-        assertEq(votes.length, 3, "Should return three votes");
-
-        // MockILOVE20Vote.votesNumByActionId 总是返回 100
-        assertEq(votes[0], 100, "First votes should be 100");
-        assertEq(votes[1], 100, "Second votes should be 100");
-        assertEq(votes[2], 100, "Third votes should be 100");
-    }
-
-    // Test votesNumsByActionIds with empty array
-    function testVotesNumsByActionIdsEmpty() public view {
-        uint256[] memory actionIds = new uint256[](0);
-        uint256[] memory votes = viewer.votesNumsByActionIds(
-            address(mockERC20),
-            1,
-            actionIds
-        );
-
-        assertEq(votes.length, 0, "Should return empty votes array");
     }
 
     // Test votingActions function

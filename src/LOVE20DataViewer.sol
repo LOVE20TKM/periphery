@@ -348,18 +348,15 @@ contract LOVE20DataViewer {
     )
         external
         view
-        returns (
-            TokenInfo[] memory tokenInfos,
-            LaunchInfo[] memory launchInfos_
-        )
+        returns (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos)
     {
         tokenInfos = new TokenInfo[](tokenAddresses.length);
-        launchInfos_ = new LaunchInfo[](tokenAddresses.length);
+        launchInfos = new LaunchInfo[](tokenAddresses.length);
         for (uint256 i = 0; i < tokenAddresses.length; i++) {
-            (tokenInfos[i], launchInfos_[i]) = tokenDetail(tokenAddresses[i]);
+            (tokenInfos[i], launchInfos[i]) = tokenDetail(tokenAddresses[i]);
         }
 
-        return (tokenInfos, launchInfos_);
+        return (tokenInfos, launchInfos);
     }
 
     function tokenPairInfoWithAccount(
@@ -412,19 +409,6 @@ contract LOVE20DataViewer {
         });
     }
 
-    //---------------- Launch related functions ----------------
-    function launchInfos(
-        address[] memory addresses
-    ) external view returns (LaunchInfo[] memory launchInfos_) {
-        launchInfos_ = new LaunchInfo[](addresses.length);
-        for (uint256 i = 0; i < addresses.length; i++) {
-            launchInfos_[i] = ILOVE20Launch(launchAddress).launchInfo(
-                addresses[i]
-            );
-        }
-        return launchInfos_;
-    }
-
     //---------------- Vote related functions ----------------
     function votesNums(
         address tokenAddress,
@@ -447,25 +431,6 @@ contract LOVE20DataViewer {
                 actionIds[i]
             );
         }
-    }
-
-    function votesNumsByActionIds(
-        address tokenAddress,
-        uint256 round,
-        uint256[] memory actionIds
-    ) external view returns (uint256[] memory votes) {
-        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
-        uint256 count = actionIds.length;
-        votes = new uint256[](count);
-
-        for (uint256 i = 0; i < count; i++) {
-            votes[i] = voteContract.votesNumByActionId(
-                tokenAddress,
-                round,
-                actionIds[i]
-            );
-        }
-        return votes;
     }
 
     //---------------- Action related functions ----------------
