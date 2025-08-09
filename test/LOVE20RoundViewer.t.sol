@@ -129,4 +129,39 @@ contract LOVE20RoundViewerTest is Test {
         );
         assertEq(actions.length, 2);
     }
+
+    function testTokenStatistics() public view {
+        TokenStats memory stats = viewer.tokenStatistics(address(mockERC20));
+
+        // Minting status
+        assertEq(stats.maxSupply, 10000000 ether);
+        assertEq(stats.totalSupply, 1000000000000000000000000); // 1e24 from MockLOVE20Token
+        assertEq(stats.reservedAvailable, 2000);
+        assertEq(stats.rewardAvailable, 50);
+
+        // Pair reserves (mocks return zero; totalLpSupply returns block.timestamp)
+        assertEq(stats.pairReserveParentToken, 0);
+        assertEq(stats.pairReserveToken, 0);
+        assertEq(stats.totalLpSupply, block.timestamp);
+
+        // Token balances
+        assertEq(stats.stakedTokenAmountForSt, 1000000 ether); // love20.balanceOf(stakeAddress)
+        assertEq(stats.joinedTokenAmount, 1000000 ether); // love20.balanceOf(joinAddress)
+
+        // SL/ST totals
+        assertEq(stats.totalSLSupply, 1000000 ether);
+        assertEq(stats.totalSTSupply, 1000000000000000000000000); // 1e24
+
+        // SL withdrawable amounts
+        assertEq(stats.parentTokenAmountForSl, 1000000000000000000000000); // 1e24
+        assertEq(stats.tokenAmountForSl, 1000000000000000000000000); // 1e24
+
+        // Launch status
+        assertEq(stats.parentPool, 1000 ether);
+
+        // Governance status
+        assertEq(stats.finishedRounds, 0); // currentRound(1) - initial(42) - 2 => clamped to 0
+        assertEq(stats.actionsCount, 3);
+        assertEq(stats.joiningActionsCount, 3);
+    }
 }

@@ -75,6 +75,31 @@ struct RewardInfo {
     bool isMinted;
 }
 
+struct TokenStats {
+    // Minting status
+    uint256 maxSupply; // token.maxSupply()
+    uint256 totalSupply; // token.totalSupply()
+    uint256 reservedAvailable; // mintContract.reservedAvailable()
+    uint256 rewardAvailable; // mintContract.rewardAvailable()
+    // Minted token allocation
+    uint256 pairReserveParentToken; // IUniswapV2Pair.getReserves()
+    uint256 pairReserveToken; // IUniswapV2Pair.getReserves()
+    uint256 totalLpSupply; // IUniswapV2Pair.getReserves()
+    uint256 stakedTokenAmountForSt; // token.balanceOf(stContract)
+    uint256 joinedTokenAmount; // token.balanceOf(joinContract)
+    // SL/ST status
+    uint256 totalSLSupply; // slContract.totalSupply()
+    uint256 totalSTSupply; // stContract.totalSupply()
+    uint256 parentTokenAmountForSl; // from slContract.tokenAmounts()
+    uint256 tokenAmountForSl; // from slContract.tokenAmounts()
+    // Launch status
+    uint256 parentPool; //token.parentPool()
+    // Governance status
+    uint256 finishedRounds; // voteContract.currentRound() - stakeContract.initialStakeRound() - 2
+    uint256 actionsCount; // submitContract.actionsCount()
+    uint256 joiningActionsCount; // joinContract.votedActionIdsCount()
+}
+
 contract LOVE20RoundViewer {
     address public stakeAddress;
     address public submitAddress;
@@ -750,13 +775,17 @@ contract LOVE20RoundViewer {
     ) external view returns (GovData memory govData_) {
         ILOVE20Token love20 = ILOVE20Token(tokenAddress);
         uint256 slAmount = ILOVE20Token(love20.slAddress()).totalSupply();
+        uint256 withdrawableTokenAmount = 0;
+        uint256 withdrawableParentTokenAmount = 0;
+        if (slAmount > 0) {
+            (
+                withdrawableTokenAmount,
+                withdrawableParentTokenAmount,
+                ,
 
-        (
-            uint256 withdrawableTokenAmount,
-            uint256 withdrawableParentTokenAmount,
-            ,
+            ) = ILOVE20SLToken(love20.slAddress()).tokenAmounts();
+        }
 
-        ) = ILOVE20SLToken(love20.slAddress()).tokenAmounts();
         uint256 rewardAvailable = ILOVE20Mint(mintAddress).rewardAvailable(
             tokenAddress
         );
@@ -770,5 +799,71 @@ contract LOVE20RoundViewer {
             rewardAvailable: rewardAvailable
         });
         return govData_;
+    }
+
+    //---------------- Token statistics related functions ----------------
+    function tokenStatistics(
+        address tokenAddress
+    ) external view returns (TokenStats memory) {
+        ILOVE20Token love20 = ILOVE20Token(tokenAddress);
+        ILOVE20SLToken sl = ILOVE20SLToken(love20.slAddress());
+
+        TokenStats memory stats;
+
+        // Basic token info
+        stats.maxSupply = love20.maxSupply();
+        stats.totalSupply = love20.totalSupply();
+        stats.reservedAvailable = ILOVE20Mint(mintAddress).reservedAvailable(
+            tokenAddress
+        );
+        stats.rewardAvailable = ILOVE20Mint(mintAddress).rewardAvailable(
+            tokenAddress
+        );
+
+        // Pair reserves
+        address pairAddress = sl.uniswapV2Pair();
+        if (pairAddress != address(0)) {
+            (
+                stats.pairReserveToken,
+                stats.pairReserveParentToken,
+                stats.totalLpSupply
+            ) = sl.uniswapV2PairReserves();
+        }
+
+        // Token balances
+        stats.stakedTokenAmountForSt = love20.balanceOf(love20.stAddress());
+        stats.joinedTokenAmount = love20.balanceOf(joinAddress);
+
+        // SL/ST totals
+        stats.totalSLSupply = sl.totalSupply();
+        stats.totalSTSupply = ILOVE20Token(love20.stAddress()).totalSupply();
+
+        // SL withdrawable amounts
+        if (stats.totalSLSupply > 0) {
+            (stats.tokenAmountForSl, stats.parentTokenAmountForSl, , ) = sl
+                .tokenAmounts();
+        }
+
+        // Launch info
+        stats.parentPool = love20.parentPool();
+
+        // Governance info
+        uint256 currentRound = ILOVE20Vote(voteAddress).currentRound();
+        uint256 initialRound = ILOVE20Stake(stakeAddress).initialStakeRound(
+            tokenAddress
+        );
+        if (currentRound > initialRound + 2) {
+            stats.finishedRounds = currentRound - initialRound - 2;
+        }
+
+        stats.actionsCount = ILOVE20Submit(submitAddress).actionsCount(
+            tokenAddress
+        );
+
+        uint256 joinRound = ILOVE20Join(joinAddress).currentRound();
+        stats.joiningActionsCount = ILOVE20Vote(voteAddress)
+            .votedActionIdsCount(tokenAddress, joinRound);
+
+        return stats;
     }
 }

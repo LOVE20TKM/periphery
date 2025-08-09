@@ -55,9 +55,19 @@ contract LOVE20TokenViewerTest is Test {
         assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
         assertEq(tokenInfo.decimals, 18, "decimals should be 18");
         assertEq(
+            tokenInfo.parentTokenAddress,
+            address(mockERC20),
+            "parentTokenAddress should be mockERC20's address"
+        );
+        assertEq(
             tokenInfo.parentTokenSymbol,
             "TEST",
             "parentSymbol should be 'TEST'"
+        );
+        assertEq(
+            tokenInfo.parentTokenName,
+            "TEST",
+            "parentName should be 'TEST'"
         );
         assertNotEq(
             tokenInfo.slAddress,
@@ -68,6 +78,11 @@ contract LOVE20TokenViewerTest is Test {
             tokenInfo.stAddress,
             address(0),
             "stAddress should not be 0"
+        );
+        assertNotEq(
+            tokenInfo.uniswapV2PairAddress,
+            address(0),
+            "uniswapV2PairAddress should be 0"
         );
         assertEq(
             tokenInfo.initialStakeRound,
@@ -95,9 +110,19 @@ contract LOVE20TokenViewerTest is Test {
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
         assertEq(tokenInfo.decimals, 18, "decimals should be 18");
         assertEq(
+            tokenInfo.parentTokenAddress,
+            address(mockERC20),
+            "parentTokenAddress should be mockERC20's address"
+        );
+        assertEq(
             tokenInfo.parentTokenSymbol,
             "TEST",
             "parentSymbol should be 'TEST'"
+        );
+        assertEq(
+            tokenInfo.parentTokenName,
+            "TEST",
+            "parentName should be 'TEST'"
         );
         assertEq(
             tokenInfo.initialStakeRound,
@@ -129,9 +154,19 @@ contract LOVE20TokenViewerTest is Test {
             assertEq(tokenInfos[i].name, "TEST", "name should be 'TEST'");
             assertEq(tokenInfos[i].decimals, 18, "decimals should be 18");
             assertEq(
+                tokenInfos[i].parentTokenAddress,
+                address(mockERC20),
+                "parentTokenAddress should be mockERC20's address"
+            );
+            assertEq(
                 tokenInfos[i].parentTokenSymbol,
                 "TEST",
                 "parentSymbol should be 'TEST'"
+            );
+            assertEq(
+                tokenInfos[i].parentTokenName,
+                "TEST",
+                "parentName should be 'TEST'"
             );
             assertEq(
                 tokenInfos[i].initialStakeRound,

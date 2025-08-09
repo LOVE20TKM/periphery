@@ -12,9 +12,12 @@ struct TokenInfo {
     string name;
     string symbol;
     uint256 decimals;
+    address parentTokenAddress;
     string parentTokenSymbol;
+    string parentTokenName;
     address slAddress;
     address stAddress;
+    address uniswapV2PairAddress;
     uint256 initialStakeRound;
 }
 
@@ -232,10 +235,14 @@ contract LOVE20TokenViewer {
             name: love20.name(),
             symbol: love20.symbol(),
             decimals: love20.decimals(),
+            parentTokenAddress: launchInfo.parentTokenAddress,
             parentTokenSymbol: ILOVE20Token(launchInfo.parentTokenAddress)
                 .symbol(),
+            parentTokenName: ILOVE20Token(launchInfo.parentTokenAddress).name(),
             slAddress: love20.slAddress(),
             stAddress: love20.stAddress(),
+            uniswapV2PairAddress: ILOVE20SLToken(love20.slAddress())
+                .uniswapV2Pair(),
             initialStakeRound: ILOVE20Stake(stakeAddress).initialStakeRound(
                 tokenAddress
             )
