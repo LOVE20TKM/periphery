@@ -75,6 +75,13 @@ struct RewardInfo {
     bool isMinted;
 }
 
+struct ActionReward {
+    uint256 actionId;
+    uint256 round;
+    uint256 reward;
+    bool isMinted;
+}
+
 struct TokenStats {
     // Minting status
     uint256 maxSupply; // token.maxSupply()
@@ -694,6 +701,209 @@ contract LOVE20RoundViewer {
         }
 
         return rewards;
+    }
+
+    function actionRewardsByAccountOfLastRounds(
+        address tokenAddress,
+        address account,
+        uint256 LastRounds
+    )
+        public
+        view
+        returns (ActionInfo[] memory actions, ActionReward[] memory rewards)
+    {
+        // Got joined action ids
+        uint256[] memory actionIds = ILOVE20Join(joinAddress)
+            .actionIdsByAccount(tokenAddress, account);
+
+        if (actionIds.length == 0) {
+            return (new ActionInfo[](0), new ActionReward[](0));
+        }
+
+        // Got current mint round
+        uint256 currentRound = ILOVE20Join(joinAddress).currentRound();
+        if (currentRound <= 2) {
+            return (new ActionInfo[](0), new ActionReward[](0));
+        } else {
+            currentRound = currentRound - 2;
+        }
+        uint256 startRound = LastRounds >= currentRound
+            ? 0
+            : currentRound - LastRounds;
+
+        // Got result
+        rewards = _collectActionRewards(
+            tokenAddress,
+            account,
+            actionIds,
+            startRound,
+            currentRound
+        );
+        actions = _getActionInfos(tokenAddress, rewards);
+
+        return (actions, rewards);
+    }
+
+    function _collectActionRewards(
+        address tokenAddress,
+        address account,
+        uint256[] memory actionIds,
+        uint256 startRound,
+        uint256 endRound
+    ) private view returns (ActionReward[] memory) {
+        uint256 maxRewards = (endRound - startRound + 1) * actionIds.length;
+        ActionReward[] memory temp = new ActionReward[](maxRewards);
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            count = _addActionRewards(
+                tokenAddress,
+                account,
+                actionIds[i],
+                startRound,
+                endRound,
+                temp,
+                count
+            );
+        }
+
+        assembly {
+            mstore(temp, count)
+        }
+        return temp;
+    }
+
+    function _addActionRewards(
+        address tokenAddress,
+        address account,
+        uint256 actionId,
+        uint256 startRound,
+        uint256 endRound,
+        ActionReward[] memory rewards,
+        uint256 startIndex
+    ) private view returns (uint256) {
+        uint256 currentIndex = startIndex;
+
+        for (uint256 round = startRound; round <= endRound; round++) {
+            if (
+                ILOVE20Mint(mintAddress).isActionIdWithReward(
+                    tokenAddress,
+                    round,
+                    actionId
+                )
+            ) {
+                (uint256 reward, bool isMinted) = ILOVE20Mint(mintAddress)
+                    .actionRewardByActionIdByAccount(
+                        tokenAddress,
+                        round,
+                        actionId,
+                        account
+                    );
+
+                if (reward > 0) {
+                    rewards[currentIndex] = ActionReward({
+                        actionId: actionId,
+                        round: round,
+                        reward: reward,
+                        isMinted: isMinted
+                    });
+                    currentIndex++;
+                }
+            }
+        }
+
+        return currentIndex;
+    }
+
+    function _getActionInfos(
+        address tokenAddress,
+        ActionReward[] memory rewards
+    ) private view returns (ActionInfo[] memory) {
+        uint256[] memory actionIds = new uint256[](rewards.length);
+        uint256 actionCount = 0;
+
+        // Got ActionIds with reward
+        for (uint256 i = 0; i < rewards.length; i++) {
+            uint256 currentActionId = rewards[i].actionId;
+            bool isDuplicate = false;
+
+            for (uint256 j = 0; j < actionCount; j++) {
+                if (actionIds[j] == currentActionId) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                actionIds[actionCount++] = currentActionId;
+            }
+        }
+        assembly {
+            mstore(actionIds, actionCount)
+        }
+
+        // Got ActionInfos
+        ActionInfo[] memory result = new ActionInfo[](actionCount);
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            result[i] = ILOVE20Submit(submitAddress).actionInfo(
+                tokenAddress,
+                actionIds[i]
+            );
+        }
+        return result;
+    }
+
+    function hasUnmintedActionRewardOfLastRounds(
+        address token,
+        address account,
+        uint256 latestRounds
+    ) public view returns (bool) {
+        // Got joined action ids
+        uint256[] memory actionIds = ILOVE20Join(joinAddress)
+            .actionIdsByAccount(token, account);
+
+        if (actionIds.length == 0) {
+            return false;
+        }
+
+        // Got current mint round
+        uint256 currentRound = ILOVE20Join(joinAddress).currentRound();
+        if (currentRound <= 2) {
+            return false;
+        } else {
+            currentRound = currentRound - 2;
+        }
+
+        uint256 startRound = latestRounds >= currentRound
+            ? 0
+            : currentRound - latestRounds;
+
+        // Got result
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            for (uint256 round = startRound; round <= currentRound; round++) {
+                if (
+                    ILOVE20Mint(mintAddress).isActionIdWithReward(
+                        token,
+                        round,
+                        actionIds[i]
+                    )
+                ) {
+                    (uint256 reward, bool isMinted) = ILOVE20Mint(mintAddress)
+                        .actionRewardByActionIdByAccount(
+                            token,
+                            round,
+                            actionIds[i],
+                            account
+                        );
+
+                    if (reward > 0 && !isMinted) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     function estimatedActionRewardOfCurrentRound(

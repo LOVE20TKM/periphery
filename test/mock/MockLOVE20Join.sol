@@ -3,10 +3,6 @@ pragma solidity =0.8.17;
 
 import "../../src/interfaces/ILOVE20Join.sol";
 
-/**
- * @title MockILOVE20Join
- * @dev LOVE20Join接口的模拟实现
- */
 contract MockILOVE20Join is ILOVE20Join {
     address internal _submitAddress;
     address internal _joinAddress;
@@ -17,7 +13,7 @@ contract MockILOVE20Join is ILOVE20Join {
     }
 
     function currentRound() external pure override returns (uint256) {
-        return 1;
+        return 5;
     }
 
     function amountByActionId(
