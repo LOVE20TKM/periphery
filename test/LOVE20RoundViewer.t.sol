@@ -174,7 +174,7 @@ contract LOVE20RoundViewerTest is Test {
             );
 
         // no reward for address(this) in mocks
-        assertEq(actions.length, 0);
+        assertEq(actions.length, 1);
         assertEq(rewards.length, 0);
     }
 

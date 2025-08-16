@@ -739,7 +739,7 @@ contract LOVE20RoundViewer {
             startRound,
             currentRound
         );
-        actions = _getActionInfos(tokenAddress, rewards);
+        actions = actionInfosByIds(tokenAddress, actionIds);
 
         return (actions, rewards);
     }
@@ -813,44 +813,6 @@ contract LOVE20RoundViewer {
         }
 
         return currentIndex;
-    }
-
-    function _getActionInfos(
-        address tokenAddress,
-        ActionReward[] memory rewards
-    ) private view returns (ActionInfo[] memory) {
-        uint256[] memory actionIds = new uint256[](rewards.length);
-        uint256 actionCount = 0;
-
-        // Got ActionIds with reward
-        for (uint256 i = 0; i < rewards.length; i++) {
-            uint256 currentActionId = rewards[i].actionId;
-            bool isDuplicate = false;
-
-            for (uint256 j = 0; j < actionCount; j++) {
-                if (actionIds[j] == currentActionId) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-
-            if (!isDuplicate) {
-                actionIds[actionCount++] = currentActionId;
-            }
-        }
-        assembly {
-            mstore(actionIds, actionCount)
-        }
-
-        // Got ActionInfos
-        ActionInfo[] memory result = new ActionInfo[](actionCount);
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            result[i] = ILOVE20Submit(submitAddress).actionInfo(
-                tokenAddress,
-                actionIds[i]
-            );
-        }
-        return result;
     }
 
     function hasUnmintedActionRewardOfLastRounds(
