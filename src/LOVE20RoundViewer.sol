@@ -872,13 +872,14 @@ contract LOVE20RoundViewer {
         address tokenAddress
     ) external view returns (uint256) {
         uint256 realRound = ILOVE20Join(joinAddress).currentRound();
-        uint256 relativeRound = realRound -
-            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress);
         uint256 leftReward = ILOVE20Mint(mintAddress).rewardAvailable(
             tokenAddress
         );
 
-        if (relativeRound > 0) {
+        if (
+            realRound >
+            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress)
+        ) {
             bool isPreRewardPrepared = ILOVE20Mint(mintAddress)
                 .isRewardPrepared(tokenAddress, realRound - 1);
             if (!isPreRewardPrepared) {
