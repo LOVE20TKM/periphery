@@ -75,6 +75,14 @@ struct RewardInfo {
     bool isMinted;
 }
 
+struct GovReward {
+    uint256 round;
+    uint256 reward;
+    uint256 verifyReward;
+    uint256 boostReward;
+    bool isMinted;
+}
+
 struct ActionReward {
     uint256 actionId;
     uint256 round;
@@ -632,13 +640,13 @@ contract LOVE20RoundViewer {
         address account,
         uint256 startRound,
         uint256 endRound
-    ) external view returns (RewardInfo[] memory rewards) {
+    ) external view returns (GovReward[] memory rewards) {
         require(
             startRound <= endRound,
             "startRound must be less than or equal to endRound"
         );
 
-        rewards = new RewardInfo[](endRound - startRound + 1);
+        rewards = new GovReward[](endRound - startRound + 1);
         for (uint256 i = startRound; i <= endRound; i++) {
             (
                 uint256 verifyReward,
@@ -651,9 +659,11 @@ contract LOVE20RoundViewer {
                     account
                 );
 
-            rewards[i - startRound] = RewardInfo({
+            rewards[i - startRound] = GovReward({
                 round: i,
                 reward: verifyReward + boostReward,
+                verifyReward: verifyReward,
+                boostReward: boostReward,
                 isMinted: isMinted
             });
         }
