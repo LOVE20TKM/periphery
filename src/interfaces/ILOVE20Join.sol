@@ -25,19 +25,17 @@ interface ILOVE20JoinEvents {
     event UpdateVerificationInfo(
         address indexed tokenAddress,
         address indexed account,
-        uint256 actionId,
-        string indexed verificationKey,
+        uint256 indexed actionId,
+        string verificationKey,
         uint256 round,
         string verificationInfo
     );
 
     event PrepareRandomAccounts(
-        address indexed tokenAddress,
-        uint256 round,
-        uint256 indexed actionId,
-        address[] accounts
+        address indexed tokenAddress, uint256 round, uint256 indexed actionId, address[] accounts
     );
 }
+
 interface ILOVE20JoinErrors {
     // Custom errors
     error AlreadyInitialized();
@@ -64,12 +62,10 @@ interface ILOVE20Join is ILOVE20JoinEvents, ILOVE20JoinErrors, IPhase {
         string[] memory verificationInfos
     ) external;
 
-    function verificationInfo(
-        address tokenAddress,
-        address account,
-        uint256 actionId,
-        string calldata verificationKey
-    ) external view returns (string memory);
+    function verificationInfo(address tokenAddress, address account, uint256 actionId, string calldata verificationKey)
+        external
+        view
+        returns (string memory);
 
     function verificationInfoByRound(
         address tokenAddress,
@@ -95,107 +91,64 @@ interface ILOVE20Join is ILOVE20JoinEvents, ILOVE20JoinErrors, IPhase {
     ) external view returns (uint256);
 
     // ------ join & withdraw ------
-    function join(
-        address tokenAddress,
-        uint256 actionId,
-        uint256 additionalAmount,
-        string[] calldata verificationInfos
-    ) external;
+    function join(address tokenAddress, uint256 actionId, uint256 additionalAmount, string[] calldata verificationInfos)
+        external;
 
-    function withdraw(
-        address tokenAddress,
-        uint256 actionId
-    ) external returns (uint256);
+    function withdraw(address tokenAddress, uint256 actionId) external returns (uint256);
 
     // ------ random accounts ------
-    function prepareRandomAccountsIfNeeded(
-        address tokenAddress,
-        uint256 actionId
-    ) external returns (address[] memory);
+    function prepareRandomAccountsIfNeeded(address tokenAddress, uint256 actionId)
+        external
+        returns (address[] memory);
 
-    function randomAccounts(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external view returns (address[] memory);
+    function randomAccounts(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        view
+        returns (address[] memory);
 
-    function randomAccountsByRandomSeed(
-        address tokenAddress,
-        uint256 actionId,
-        uint256 randomSeed,
-        uint256 num
-    ) external view returns (address[] memory);
+    function randomAccountsByRandomSeed(address tokenAddress, uint256 actionId, uint256 randomSeed, uint256 num)
+        external
+        view
+        returns (address[] memory);
 
-    function randomAccountsByActionIdCount(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external view returns (uint256);
+    function randomAccountsByActionIdCount(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        view
+        returns (uint256);
 
-    function randomAccountsByActionIdAtIndex(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId,
-        uint256 index
-    ) external view returns (address);
+    function randomAccountsByActionIdAtIndex(address tokenAddress, uint256 round, uint256 actionId, uint256 index)
+        external
+        view
+        returns (address);
 
     // ------ joined amount ------
 
-    function amountByActionId(
-        address tokenAddress,
-        uint256 actionId
-    ) external view returns (uint256);
+    function amountByActionId(address tokenAddress, uint256 actionId) external view returns (uint256);
 
-    function amountByActionIdByAccount(
-        address tokenAddress,
-        uint256 actionId,
-        address account
-    ) external view returns (uint256);
+    function amountByActionIdByAccount(address tokenAddress, uint256 actionId, address account)
+        external
+        view
+        returns (uint256);
 
-    function amountByAccount(
-        address tokenAddress,
-        address account
-    ) external view returns (uint256);
+    function amountByAccount(address tokenAddress, address account) external view returns (uint256);
 
     // ------ joined action ids ------
-    function actionIdsByAccount(
-        address tokenAddress,
-        address account
-    ) external view returns (uint256[] memory);
+    function actionIdsByAccount(address tokenAddress, address account) external view returns (uint256[] memory);
 
-    function actionIdsByAccountCount(
-        address tokenAddress,
-        address account
-    ) external view returns (uint256);
+    function actionIdsByAccountCount(address tokenAddress, address account) external view returns (uint256);
 
-    function actionIdsByAccountAtIndex(
-        address tokenAddress,
-        address account,
-        uint256 index
-    ) external view returns (uint256);
+    function actionIdsByAccountAtIndex(address tokenAddress, address account, uint256 index)
+        external
+        view
+        returns (uint256);
 
     // ------ index & account ------
-    function numOfAccounts(
-        address tokenAddress,
-        uint256 actionId
-    ) external view returns (uint256);
+    function numOfAccounts(address tokenAddress, uint256 actionId) external view returns (uint256);
 
     // 1-indexed
-    function indexToAccount(
-        address tokenAddress,
-        uint256 actionId,
-        uint256 index
-    ) external view returns (address);
+    function indexToAccount(address tokenAddress, uint256 actionId, uint256 index) external view returns (address);
 
-    function accountToIndex(
-        address tokenAddress,
-        uint256 actionId,
-        address account
-    ) external view returns (uint256);
+    function accountToIndex(address tokenAddress, uint256 actionId, address account) external view returns (uint256);
 
-    function prefixSum(
-        address tokenAddress,
-        uint256 actionId,
-        uint256 index
-    ) external view returns (uint256);
+    function prefixSum(address tokenAddress, uint256 actionId, uint256 index) external view returns (uint256);
 }

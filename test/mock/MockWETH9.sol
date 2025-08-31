@@ -51,11 +51,7 @@ contract MockWETH9 {
     /**
      * @dev 授权转账
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
         require(balanceOf[from] >= value, "Insufficient balance");
         require(allowance[from][msg.sender] >= value, "Insufficient allowance");
 

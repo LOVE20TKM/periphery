@@ -35,10 +35,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
         mockERC20 = new MockLOVE20Token("TEST", address(0));
         mockStake = new MockILOVE20Stake();
         mockSubmit = new MockILOVE20Submit();
-        mockLaunch = new MockILOVE20Launch(
-            address(mockERC20),
-            address(mockStake)
-        );
+        mockLaunch = new MockILOVE20Launch(address(mockERC20), address(mockStake));
         mockVote = new MockILOVE20Vote();
         mockJoin = new MockILOVE20Join(address(mockSubmit), address(mockJoin));
         mockVerify = new MockILOVE20Verify();
@@ -65,9 +62,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         // Set test parameters
         uint256 tokenAmount = 1000 ether;
@@ -200,15 +197,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         vm.expectRevert("Parent token address not found");
         vm.prank(user);
-        hub.stakeLiquidity(
-            address(mockTokenWithZeroParent),
-            1000 ether,
-            2000 ether,
-            900 ether,
-            1800 ether,
-            5,
-            user
-        );
+        hub.stakeLiquidity(address(mockTokenWithZeroParent), 1000 ether, 2000 ether, 900 ether, 1800 ether, 5, user);
     }
 
     /**
@@ -281,9 +270,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a mock token with zero reserves
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve = 0
-                0 // parentTokenReserve = 0
-            );
+            0, // tokenReserve = 0
+            0 // parentTokenReserve = 0
+        );
 
         uint256 tokenAmount = 1000 ether;
         uint256 parentTokenAmount = 2000 ether;
@@ -293,13 +282,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
         // First liquidity addition should use desired amounts
         vm.prank(user);
         (uint256 govVotesAdded, uint256 slAmountAdded) = hub.stakeLiquidity(
-            address(mockTokenWithZeroReserves),
-            tokenAmount,
-            parentTokenAmount,
-            tokenAmount,
-            parentTokenAmount,
-            5,
-            user
+            address(mockTokenWithZeroReserves), tokenAmount, parentTokenAmount, tokenAmount, parentTokenAmount, 5, user
         );
 
         // Verify return values
@@ -315,9 +298,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         _setupUserTokenBalances(user, 1000 ether, 2000 ether);
 
@@ -329,13 +312,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
         for (uint256 i = 0; i < phases.length; i++) {
             vm.prank(user);
             (uint256 govVotesAdded, uint256 slAmountAdded) = hub.stakeLiquidity(
-                address(mockTokenWithZeroReserves),
-                100 ether,
-                200 ether,
-                90 ether,
-                180 ether,
-                phases[i],
-                user
+                address(mockTokenWithZeroReserves), 100 ether, 200 ether, 90 ether, 180 ether, phases[i], user
             );
 
             // Verify each call succeeds
@@ -347,11 +324,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
     /**
      * @dev Fuzz test - test various amount combinations
      */
-    function testFuzzStakeLiquidity(
-        uint256 tokenAmount,
-        uint256 parentTokenAmount,
-        uint256 promisedWaitingPhases
-    ) public {
+    function testFuzzStakeLiquidity(uint256 tokenAmount, uint256 parentTokenAmount, uint256 promisedWaitingPhases)
+        public
+    {
         // Limit parameter ranges
         vm.assume(tokenAmount > 0 && tokenAmount <= 1000000 ether);
         vm.assume(parentTokenAmount > 0 && parentTokenAmount <= 1000000 ether);
@@ -361,9 +336,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         _setupUserTokenBalances(user, tokenAmount, parentTokenAmount);
 
@@ -395,9 +370,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a mock token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         uint256 minAmount = 1; // Minimal amount
         _setupUserTokenBalances(user, minAmount, minAmount);
@@ -426,9 +401,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         uint256 largeAmount = 1000000 ether;
         _setupUserTokenBalances(user, largeAmount, largeAmount);
@@ -457,9 +432,9 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
         // Create a token with zero reserves for first liquidity addition
         MockERC20WithReserves mockTokenWithZeroReserves = new MockERC20WithReserves(
-                0, // tokenReserve
-                0 // parentTokenReserve
-            );
+            0, // tokenReserve
+            0 // parentTokenReserve
+        );
 
         address[] memory users = new address[](3);
         users[0] = address(0x111);
@@ -471,13 +446,7 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
 
             vm.prank(users[i]);
             (uint256 govVotesAdded, uint256 slAmountAdded) = hub.stakeLiquidity(
-                address(mockTokenWithZeroReserves),
-                100 ether,
-                200 ether,
-                90 ether,
-                180 ether,
-                5,
-                users[i]
+                address(mockTokenWithZeroReserves), 100 ether, 200 ether, 90 ether, 180 ether, 5, users[i]
             );
 
             // Verify each call succeeds
@@ -574,11 +543,10 @@ contract LOVE20HubStakeLiquidityTest is ILOVE20HubEvents, Test {
     /**
      * @dev Setup sufficient token balances for user
      */
-    function _setupUserTokenBalances(
-        address targetUser,
-        uint256 tokenAmount,
-        uint256 parentTokenAmount
-    ) internal pure {
+    function _setupUserTokenBalances(address targetUser, uint256 tokenAmount, uint256 parentTokenAmount)
+        internal
+        pure
+    {
         // Provide sufficient token balances for user
         // Note: In a real environment, this would require ERC20 transfer or mint functions
         // In our test environment, Mock contracts return fixed balances, so this is mainly documentation

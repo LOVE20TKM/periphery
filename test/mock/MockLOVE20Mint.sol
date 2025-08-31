@@ -12,12 +12,12 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 1;
     }
 
-    function actionRewardByActionIdByAccount(
-        address,
-        uint256,
-        uint256,
-        address account
-    ) external pure override returns (uint256 reward, bool isMinted) {
+    function actionRewardByActionIdByAccount(address, uint256, uint256, address account)
+        external
+        pure
+        override
+        returns (uint256 reward, bool isMinted)
+    {
         if (account == address(0x1)) {
             return (25, true);
         } else if (account == address(0x2)) {
@@ -26,12 +26,12 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return (0, false);
     }
 
-    function actionRewardMintedByAccount(
-        address,
-        uint256,
-        uint256,
-        address account
-    ) external pure override returns (uint256) {
+    function actionRewardMintedByAccount(address, uint256, uint256, address account)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         if (account == address(0x1)) {
             return 50;
         } else if (account == address(0x2)) {
@@ -40,19 +40,16 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 0;
     }
 
-    function govRewardByAccount(
-        address,
-        uint256,
-        address
-    ) external pure override returns (uint256, uint256, uint256, bool) {
+    function govRewardByAccount(address, uint256, address)
+        external
+        pure
+        override
+        returns (uint256, uint256, uint256, bool)
+    {
         return (50, 50, 50, true);
     }
 
-    function govRewardMintedByAccount(
-        address,
-        uint256,
-        address
-    ) external pure override returns (uint256) {
+    function govRewardMintedByAccount(address, uint256, address) external pure override returns (uint256) {
         return 50;
     }
 
@@ -61,11 +58,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
     }
 
     // Add missing interface implementations
-    function ACTION_REWARD_MIN_VOTE_PER_THOUSAND()
-        external
-        pure
-        returns (uint256)
-    {
+    function ACTION_REWARD_MIN_VOTE_PER_THOUSAND() external pure returns (uint256) {
         return 100;
     }
 
@@ -73,11 +66,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 5;
     }
 
-    function ROUND_REWARD_ACTION_PER_THOUSAND()
-        external
-        pure
-        returns (uint256)
-    {
+    function ROUND_REWARD_ACTION_PER_THOUSAND() external pure returns (uint256) {
         return 200;
     }
 
@@ -89,18 +78,11 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return false;
     }
 
-    function calculateRoundGovReward(
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function calculateRoundGovReward(address, uint256) external pure returns (uint256) {
         return 1500;
     }
 
-    function govBoostReward(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function govBoostReward(address, uint256, address) external pure returns (uint256) {
         return 200;
     }
 
@@ -108,19 +90,11 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return 800;
     }
 
-    function govVerifyReward(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function govVerifyReward(address, uint256, address) external pure returns (uint256) {
         return 150;
     }
 
-    function isActionIdWithReward(
-        address,
-        uint256,
-        uint256
-    ) external pure returns (bool) {
+    function isActionIdWithReward(address, uint256, uint256) external pure returns (bool) {
         return true;
     }
 
@@ -128,12 +102,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return true;
     }
 
-    function mintActionReward(
-        address,
-        uint256,
-        uint256,
-        address
-    ) external pure {
+    function mintActionReward(address, uint256, uint256, address) external pure {
         // Mock implementation
     }
 
@@ -145,10 +114,7 @@ contract MockILOVE20Mint is ILOVE20Mint {
         // Mock implementation
     }
 
-    function reservedAvailable(
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function reservedAvailable(address, uint256) external pure returns (uint256) {
         return 2000;
     }
 
@@ -176,71 +142,48 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return address(0x789);
     }
 
-    function actionReward(
-        address tokenAddress,
-        uint256 round
-    ) external pure returns (uint256) {
+    function actionReward(address tokenAddress, uint256 round) external pure returns (uint256) {
         tokenAddress;
         round;
         return 500;
     }
 
-    function actionRewardBurned(
-        address tokenAddress,
-        uint256 round
-    ) external pure returns (bool) {
+    function actionRewardBurned(address tokenAddress, uint256 round) external pure returns (bool) {
         tokenAddress;
         round;
         return false;
     }
 
-    function calculateRoundActionReward(
-        address tokenAddress
-    ) external pure returns (uint256) {
+    function calculateRoundActionReward(address tokenAddress) external pure returns (uint256) {
         tokenAddress;
         return 1000;
     }
 
-    function calculateRoundGovReward(
-        address tokenAddress
-    ) external pure returns (uint256) {
+    function calculateRoundGovReward(address tokenAddress) external pure returns (uint256) {
         tokenAddress;
         return 1500;
     }
 
-    function govBoostReward(
-        address tokenAddress,
-        uint256 round
-    ) external pure returns (uint256) {
+    function govBoostReward(address tokenAddress, uint256 round) external pure returns (uint256) {
         tokenAddress;
         round;
         return 200;
     }
 
-    function govVerifyReward(
-        address tokenAddress,
-        uint256 round
-    ) external pure returns (uint256) {
+    function govVerifyReward(address tokenAddress, uint256 round) external pure returns (uint256) {
         tokenAddress;
         round;
         return 150;
     }
 
-    function mintActionReward(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external pure returns (uint256) {
+    function mintActionReward(address tokenAddress, uint256 round, uint256 actionId) external pure returns (uint256) {
         tokenAddress;
         round;
         actionId;
         return 500;
     }
 
-    function mintGovReward(
-        address tokenAddress,
-        uint256 round
-    )
+    function mintGovReward(address tokenAddress, uint256 round)
         external
         pure
         returns (uint256 verifyReward, uint256 boostReward, uint256 burnReward)
@@ -250,25 +193,18 @@ contract MockILOVE20Mint is ILOVE20Mint {
         return (100, 50, 25);
     }
 
-    function numOfMintGovRewardByAccount(
-        address tokenAddress,
-        address account
-    ) external pure returns (uint256) {
+    function numOfMintGovRewardByAccount(address tokenAddress, address account) external pure returns (uint256) {
         tokenAddress;
         account;
         return 3;
     }
 
-    function reservedAvailable(
-        address tokenAddress
-    ) external pure returns (uint256) {
+    function reservedAvailable(address tokenAddress) external pure returns (uint256) {
         tokenAddress;
         return 2000;
     }
 
-    function rewardReserved(
-        address tokenAddress
-    ) external pure returns (uint256) {
+    function rewardReserved(address tokenAddress) external pure returns (uint256) {
         tokenAddress;
         return 3000;
     }

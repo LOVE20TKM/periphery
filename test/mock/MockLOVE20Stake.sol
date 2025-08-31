@@ -8,16 +8,12 @@ import "../../src/interfaces/ILOVE20Stake.sol";
  * @dev LOVE20Stake接口的模拟实现
  */
 contract MockILOVE20Stake is ILOVE20Stake {
-    function initialStakeRound(
-        address tokenAddress
-    ) external pure override returns (uint256) {
+    function initialStakeRound(address tokenAddress) external pure override returns (uint256) {
         tokenAddress;
         return 42;
     }
 
-    function govVotesNum(
-        address tokenAddress
-    ) external pure override returns (uint256) {
+    function govVotesNum(address tokenAddress) external pure override returns (uint256) {
         tokenAddress;
         return 100;
     }
@@ -46,40 +42,25 @@ contract MockILOVE20Stake is ILOVE20Stake {
         return 1;
     }
 
-    function accountStakeStatus(
-        address,
-        address
-    ) external pure returns (AccountStakeStatus memory) {
-        return
-            AccountStakeStatus({
-                slAmount: 100,
-                stAmount: 50,
-                promisedWaitingPhases: 2,
-                requestedUnstakeRound: 0,
-                govVotes: 1000
-            });
+    function accountStakeStatus(address, address) external pure returns (AccountStakeStatus memory) {
+        return AccountStakeStatus({
+            slAmount: 100,
+            stAmount: 50,
+            promisedWaitingPhases: 2,
+            requestedUnstakeRound: 0,
+            govVotes: 1000
+        });
     }
 
-    function caculateGovVotes(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function caculateGovVotes(address, uint256, address) external pure returns (uint256) {
         return 150;
     }
 
-    function cumulatedTokenAmount(
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function cumulatedTokenAmount(address, uint256) external pure returns (uint256) {
         return 5000;
     }
 
-    function cumulatedTokenAmountByAccount(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function cumulatedTokenAmountByAccount(address, uint256, address) external pure returns (uint256) {
         return 1000;
     }
 
@@ -100,40 +81,23 @@ contract MockILOVE20Stake is ILOVE20Stake {
         return 1;
     }
 
-    function stakeToken(
-        address,
-        uint256,
-        uint256,
-        address
-    ) external pure returns (uint256 govVotesAdded) {
+    function stakeToken(address, uint256, uint256, address) external pure returns (uint256 govVotesAdded) {
         return 100; // Mock implementation
     }
 
-    function stakeTokenUpdatedRoundsCount(
-        address
-    ) external pure returns (uint256) {
+    function stakeTokenUpdatedRoundsCount(address) external pure returns (uint256) {
         return 3;
     }
 
-    function stakeTokenUpdatedRoundsAtIndex(
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function stakeTokenUpdatedRoundsAtIndex(address, uint256) external pure returns (uint256) {
         return 1;
     }
 
-    function stakeTokenUpdatedRoundsByAccountCount(
-        address,
-        address
-    ) external pure returns (uint256) {
+    function stakeTokenUpdatedRoundsByAccountCount(address, address) external pure returns (uint256) {
         return 2;
     }
 
-    function stakeTokenUpdatedRoundsByAccountAtIndex(
-        address,
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function stakeTokenUpdatedRoundsByAccountAtIndex(address, address, uint256) external pure returns (uint256) {
         return 1;
     }
 
@@ -141,11 +105,7 @@ contract MockILOVE20Stake is ILOVE20Stake {
         // Mock implementation
     }
 
-    function validGovVotes(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function validGovVotes(address, uint256, address) external pure returns (uint256) {
         return 80;
     }
 
@@ -153,17 +113,11 @@ contract MockILOVE20Stake is ILOVE20Stake {
         // Mock implementation
     }
 
-    function caculateGovVotes(
-        uint256 lpAmount,
-        uint256 promisedWaitingPhases
-    ) external pure returns (uint256) {
+    function caculateGovVotes(uint256 lpAmount, uint256 promisedWaitingPhases) external pure returns (uint256) {
         return lpAmount * promisedWaitingPhases;
     }
 
-    function validGovVotes(
-        address tokenAddress,
-        address account
-    ) external pure returns (uint256) {
+    function validGovVotes(address tokenAddress, address account) external pure returns (uint256) {
         tokenAddress;
         account;
         return 500;

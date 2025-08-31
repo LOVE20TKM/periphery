@@ -17,37 +17,28 @@ contract MockILOVE20Launch is ILOVE20Launch {
         stakeAddress = _stakeAddress;
     }
 
-    function launchInfo(
-        address
-    ) external view override returns (LaunchInfo memory launchInfo_) {
-        return
-            LaunchInfo({
-                parentTokenAddress: parentTokenAddress,
-                parentTokenFundraisingGoal: 1000000,
-                secondHalfMinBlocks: 5000,
-                launchAmount: 500000,
-                startBlock: 100,
-                secondHalfStartBlock: 5100,
-                endBlock: 1000,
-                hasEnded: false,
-                participantCount: 100,
-                totalContributed: 1000000,
-                totalExtraRefunded: 50000
-            });
+    function launchInfo(address) external view override returns (LaunchInfo memory launchInfo_) {
+        return LaunchInfo({
+            parentTokenAddress: parentTokenAddress,
+            parentTokenFundraisingGoal: 1000000,
+            secondHalfMinBlocks: 5000,
+            launchAmount: 500000,
+            startBlock: 100,
+            secondHalfStartBlock: 5100,
+            endBlock: 1000,
+            hasEnded: false,
+            participantCount: 100,
+            totalContributed: 1000000,
+            totalExtraRefunded: 50000
+        });
     }
 
-    function tokenAddressBySymbol(
-        string memory symbol
-    ) external view override returns (address) {
+    function tokenAddressBySymbol(string memory symbol) external view override returns (address) {
         symbol;
         return address(parentTokenAddress);
     }
 
-    function contribute(
-        address tokenAddress,
-        uint256 parentTokenAmount,
-        address to
-    ) external virtual override {
+    function contribute(address tokenAddress, uint256 parentTokenAmount, address to) external virtual override {
         // Mock implementation - just store values for testing
         tokenAddress;
         parentTokenAmount;
@@ -62,16 +53,11 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return parentTokenAddress;
     }
 
-    function childTokensCount(
-        address
-    ) external pure override returns (uint256) {
+    function childTokensCount(address) external pure override returns (uint256) {
         return 2;
     }
 
-    function childTokensAtIndex(
-        address,
-        uint256
-    ) external view override returns (address) {
+    function childTokensAtIndex(address, uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
@@ -79,9 +65,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return 1;
     }
 
-    function launchingTokensAtIndex(
-        uint256
-    ) external view override returns (address) {
+    function launchingTokensAtIndex(uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
@@ -89,57 +73,36 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return 1;
     }
 
-    function launchedTokensAtIndex(
-        uint256
-    ) external view override returns (address) {
+    function launchedTokensAtIndex(uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
-    function launchingChildTokensCount(
-        address
-    ) external pure override returns (uint256) {
+    function launchingChildTokensCount(address) external pure override returns (uint256) {
         return 1;
     }
 
-    function launchingChildTokensAtIndex(
-        address,
-        uint256
-    ) external view override returns (address) {
+    function launchingChildTokensAtIndex(address, uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
-    function launchedChildTokensCount(
-        address
-    ) external pure override returns (uint256) {
+    function launchedChildTokensCount(address) external pure override returns (uint256) {
         return 1;
     }
 
-    function launchedChildTokensAtIndex(
-        address,
-        uint256
-    ) external view override returns (address) {
+    function launchedChildTokensAtIndex(address, uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
-    function participatedTokensCount(
-        address
-    ) external pure override returns (uint256) {
+    function participatedTokensCount(address) external pure override returns (uint256) {
         return 1;
     }
 
-    function participatedTokensAtIndex(
-        address,
-        uint256
-    ) external view override returns (address) {
+    function participatedTokensAtIndex(address, uint256) external view override returns (address) {
         return parentTokenAddress;
     }
 
     // Add missing interface implementations
-    function FIRST_PARENT_TOKEN_FUNDRAISING_GOAL()
-        external
-        pure
-        returns (uint256)
-    {
+    function FIRST_PARENT_TOKEN_FUNDRAISING_GOAL() external pure returns (uint256) {
         return 1000000;
     }
 
@@ -163,23 +126,15 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return 1000;
     }
 
-    function childTokensByLauncherCount(
-        address
-    ) external pure returns (uint256) {
+    function childTokensByLauncherCount(address) external pure returns (uint256) {
         return 1;
     }
 
-    function childTokensByLauncherAtIndex(
-        address,
-        uint256
-    ) external view returns (address) {
+    function childTokensByLauncherAtIndex(address, uint256) external view returns (address) {
         return parentTokenAddress;
     }
 
-    function claimInfo(
-        address,
-        address
-    ) external pure returns (uint256, uint256, bool) {
+    function claimInfo(address, address) external pure returns (uint256, uint256, bool) {
         return (1000, 500, false);
     }
 
@@ -191,10 +146,7 @@ contract MockILOVE20Launch is ILOVE20Launch {
         return true;
     }
 
-    function lastContributedBlock(
-        address,
-        address
-    ) external view returns (uint256) {
+    function lastContributedBlock(address, address) external view returns (uint256) {
         return block.number - 10;
     }
 
@@ -214,45 +166,42 @@ contract MockILOVE20Launch is ILOVE20Launch {
         // Mock implementation
     }
 
-    function claim(
-        address tokenAddress
-    ) external pure returns (uint256 receivedTokenAmount, uint256 extraRefund) {
+    function claim(address tokenAddress) external pure returns (uint256 receivedTokenAmount, uint256 extraRefund) {
         tokenAddress;
         return (1000, 500);
     }
 
-    function launchToken(
-        string memory tokenSymbol,
-        address parentTokenAddress_
-    ) external pure returns (address tokenAddress) {
+    function launchToken(string memory tokenSymbol, address parentTokenAddress_)
+        external
+        pure
+        returns (address tokenAddress)
+    {
         tokenSymbol;
         parentTokenAddress_;
         return address(0x123);
     }
 
-    function remainingLaunchCount(
-        address parentTokenAddress_,
-        address account
-    ) external pure returns (uint256 count) {
+    function remainingLaunchCount(address parentTokenAddress_, address account) external pure returns (uint256 count) {
         parentTokenAddress_;
         account;
         return 3;
     }
 
-    function childTokensByLauncherCount(
-        address parentTokenAddress_,
-        address account
-    ) external pure returns (uint256 count) {
+    function childTokensByLauncherCount(address parentTokenAddress_, address account)
+        external
+        pure
+        returns (uint256 count)
+    {
         parentTokenAddress_;
         account;
         return 2;
     }
 
-    function childTokensByLauncherAtIndex(
-        address parentTokenAddress_,
-        address account,
-        uint256 index
-    ) external pure returns (address tokenAddress) {
+    function childTokensByLauncherAtIndex(address parentTokenAddress_, address account, uint256 index)
+        external
+        pure
+        returns (address tokenAddress)
+    {
         parentTokenAddress_;
         account;
         index;
@@ -270,20 +219,15 @@ contract MockILOVE20LaunchForHub is MockILOVE20Launch {
     address public lastContributeTo;
     address public wethAddress;
 
-    constructor(
-        address _parentTokenAddress,
-        address _stakeAddress
-    ) MockILOVE20Launch(_parentTokenAddress, _stakeAddress) {}
+    constructor(address _parentTokenAddress, address _stakeAddress)
+        MockILOVE20Launch(_parentTokenAddress, _stakeAddress)
+    {}
 
     function setWethAddress(address _wethAddress) external {
         wethAddress = _wethAddress;
     }
 
-    function contribute(
-        address tokenAddress,
-        uint256 amount,
-        address to
-    ) external override {
+    function contribute(address tokenAddress, uint256 amount, address to) external override {
         lastContributeToken = tokenAddress;
         lastContributeAmount = amount;
         lastContributeTo = to;

@@ -31,7 +31,8 @@ cast_send() {
         "$function_signature" \
         "${args[@]}" \
         --rpc-url "$RPC_URL" \
-        --private-key "$PRIVATE_KEY"
+        --private-key "$PRIVATE_KEY" \
+        --legacy
 }
 echo "cast_send() loaded"
 

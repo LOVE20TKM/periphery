@@ -179,4 +179,34 @@ contract MockILOVE20Verify is ILOVE20Verify {
         round;
         return 1000;
     }
+
+    function scoreByVerifierByActionIdByAccount(
+        address tokenAddress,
+        uint256 round,
+        address verifier,
+        uint256 actionId,
+        address account
+    ) external pure returns (uint256) {
+        tokenAddress;
+        round;
+        actionId;
+
+        // 弃权票（零地址）的处理
+        if (account == address(0)) {
+            // 不同验证者的弃权票分数
+            if (verifier == address(0x1)) return 30;
+            if (verifier == address(0x2)) return 40;
+            if (verifier == address(0x3)) return 50;
+            return 35; // 默认弃权票分数
+        }
+
+        // 正常被验证者的分数
+        if (verifier == address(0x1) && account == address(0xa)) return 85;
+        if (verifier == address(0x1) && account == address(0xb)) return 90;
+        if (verifier == address(0x2) && account == address(0xa)) return 75;
+        if (verifier == address(0x2) && account == address(0xb)) return 80;
+        if (verifier == address(0x3) && account == address(0xa)) return 95;
+        if (verifier == address(0x3) && account == address(0xb)) return 70;
+        return 60; // 默认分数
+    }
 }

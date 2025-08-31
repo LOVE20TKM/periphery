@@ -16,6 +16,7 @@ struct LaunchInfo {
     uint256 totalContributed;
     uint256 totalExtraRefunded;
 }
+
 interface ILOVE20LaunchErrors {
     error AlreadyInitialized();
     error InvalidTokenSymbol();
@@ -37,10 +38,7 @@ interface ILOVE20LaunchErrors {
 
 interface ILOVE20LaunchEvents {
     event LaunchToken(
-        address indexed tokenAddress,
-        string tokenSymbol,
-        address indexed parentTokenAddress,
-        address indexed account
+        address indexed tokenAddress, string tokenSymbol, address indexed parentTokenAddress, address indexed account
     );
 
     event Contribute(
@@ -51,177 +49,104 @@ interface ILOVE20LaunchEvents {
         uint256 participantCount
     );
 
-    event Withdraw(
-        address indexed tokenAddress,
-        address indexed account,
-        uint256 amount
-    );
+    event Withdraw(address indexed tokenAddress, address indexed account, uint256 amount);
 
     event Claim(
-        address indexed tokenAddress,
-        address indexed account,
-        uint256 receivedTokenAmount,
-        uint256 extraRefund
+        address indexed tokenAddress, address indexed account, uint256 receivedTokenAmount, uint256 extraRefund
     );
 
-    event SecondHalfStart(
-        address indexed tokenAddress,
-        uint256 secondHalfStartBlock,
-        uint256 totalContributed
-    );
+    event SecondHalfStart(address indexed tokenAddress, uint256 secondHalfStartBlock, uint256 totalContributed);
 
-    event LaunchEnd(
-        address indexed tokenAddress,
-        uint256 totalContributed,
-        uint256 participantCount,
-        uint256 endBlock
-    );
+    event LaunchEnd(address indexed tokenAddress, uint256 totalContributed, uint256 participantCount, uint256 endBlock);
 }
 
 interface ILOVE20Launch is ILOVE20LaunchErrors, ILOVE20LaunchEvents {
-    function tokenFactoryAddress()
-        external
-        view
-        returns (address factoryAddress);
+    function tokenFactoryAddress() external view returns (address factoryAddress);
 
     function submitAddress() external view returns (address address_);
     function mintAddress() external view returns (address address_);
 
     function TOKEN_SYMBOL_LENGTH() external view returns (uint256 length);
 
-    function FIRST_PARENT_TOKEN_FUNDRAISING_GOAL()
-        external
-        view
-        returns (uint256 goal);
+    function FIRST_PARENT_TOKEN_FUNDRAISING_GOAL() external view returns (uint256 goal);
 
-    function PARENT_TOKEN_FUNDRAISING_GOAL()
-        external
-        view
-        returns (uint256 goal);
+    function PARENT_TOKEN_FUNDRAISING_GOAL() external view returns (uint256 goal);
 
     function SECOND_HALF_MIN_BLOCKS() external view returns (uint256 blocks);
 
     function WITHDRAW_WAITING_BLOCKS() external view returns (uint256 blocks);
 
-    function MIN_GOV_REWARD_MINTS_TO_LAUNCH()
-        external
-        view
-        returns (uint256 mints);
+    function MIN_GOV_REWARD_MINTS_TO_LAUNCH() external view returns (uint256 mints);
 
     function isLOVE20Token(address tokenAddress) external view returns (bool);
 
-    function launchToken(
-        string memory tokenSymbol,
-        address parentTokenAddress
-    ) external returns (address tokenAddress);
+    function launchToken(string memory tokenSymbol, address parentTokenAddress)
+        external
+        returns (address tokenAddress);
 
-    function contribute(
-        address tokenAddress,
-        uint256 parentTokenAmount,
-        address to
-    ) external;
+    function contribute(address tokenAddress, uint256 parentTokenAmount, address to) external;
 
     function withdraw(address tokenAddress) external;
 
-    function claim(
-        address tokenAddress
-    ) external returns (uint256 receivedTokenAmount, uint256 extraRefund);
+    function claim(address tokenAddress) external returns (uint256 receivedTokenAmount, uint256 extraRefund);
 
-    function claimInfo(
-        address tokenAddress,
-        address account
-    )
+    function claimInfo(address tokenAddress, address account)
         external
         view
-        returns (
-            uint256 receivedTokenAmount,
-            uint256 extraRefund,
-            bool isClaimed
-        );
+        returns (uint256 receivedTokenAmount, uint256 extraRefund, bool isClaimed);
 
-    function remainingLaunchCount(
-        address parentTokenAddress,
-        address account
-    ) external view returns (uint256 count);
+    function remainingLaunchCount(address parentTokenAddress, address account) external view returns (uint256 count);
 
     function tokensCount() external view returns (uint256 count);
-    function tokensAtIndex(
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function tokensAtIndex(uint256 index) external view returns (address tokenAddress);
 
-    function childTokensByLauncherCount(
-        address parentTokenAddress,
-        address account
-    ) external view returns (uint256 count);
-    function childTokensByLauncherAtIndex(
-        address parentTokenAddress,
-        address account,
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function childTokensByLauncherCount(address parentTokenAddress, address account)
+        external
+        view
+        returns (uint256 count);
+    function childTokensByLauncherAtIndex(address parentTokenAddress, address account, uint256 index)
+        external
+        view
+        returns (address tokenAddress);
 
-    function childTokensCount(
-        address parentTokenAddress
-    ) external view returns (uint256 count);
+    function childTokensCount(address parentTokenAddress) external view returns (uint256 count);
 
-    function childTokensAtIndex(
-        address parentTokenAddress,
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function childTokensAtIndex(address parentTokenAddress, uint256 index)
+        external
+        view
+        returns (address tokenAddress);
 
     function launchingTokensCount() external view returns (uint256 count);
 
-    function launchingTokensAtIndex(
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function launchingTokensAtIndex(uint256 index) external view returns (address tokenAddress);
 
     function launchedTokensCount() external view returns (uint256 count);
 
-    function launchedTokensAtIndex(
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function launchedTokensAtIndex(uint256 index) external view returns (address tokenAddress);
 
-    function launchingChildTokensCount(
-        address parentTokenAddress
-    ) external view returns (uint256 count);
+    function launchingChildTokensCount(address parentTokenAddress) external view returns (uint256 count);
 
-    function launchingChildTokensAtIndex(
-        address parentTokenAddress,
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function launchingChildTokensAtIndex(address parentTokenAddress, uint256 index)
+        external
+        view
+        returns (address tokenAddress);
 
-    function launchedChildTokensCount(
-        address parentTokenAddress
-    ) external view returns (uint256 count);
+    function launchedChildTokensCount(address parentTokenAddress) external view returns (uint256 count);
 
-    function launchedChildTokensAtIndex(
-        address parentTokenAddress,
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function launchedChildTokensAtIndex(address parentTokenAddress, uint256 index)
+        external
+        view
+        returns (address tokenAddress);
 
-    function participatedTokensCount(
-        address account
-    ) external view returns (uint256 count);
+    function participatedTokensCount(address account) external view returns (uint256 count);
 
-    function participatedTokensAtIndex(
-        address account,
-        uint256 index
-    ) external view returns (address tokenAddress);
+    function participatedTokensAtIndex(address account, uint256 index) external view returns (address tokenAddress);
 
-    function tokenAddressBySymbol(
-        string memory symbol
-    ) external view returns (address tokenAddress);
+    function tokenAddressBySymbol(string memory symbol) external view returns (address tokenAddress);
 
-    function launchInfo(
-        address tokenAddress
-    ) external view returns (LaunchInfo memory info);
+    function launchInfo(address tokenAddress) external view returns (LaunchInfo memory info);
 
-    function contributed(
-        address tokenAddress,
-        address account
-    ) external view returns (uint256 amount);
+    function contributed(address tokenAddress, address account) external view returns (uint256 amount);
 
-    function lastContributedBlock(
-        address tokenAddress,
-        address account
-    ) external view returns (uint256 blockNumber);
+    function lastContributedBlock(address tokenAddress, address account) external view returns (uint256 blockNumber);
 }

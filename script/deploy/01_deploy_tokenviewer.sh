@@ -1,4 +1,9 @@
 forge_script ../DeployTokenViewer.s.sol:DeployTokenViewer \
---sig "run(address,address)" \
+--sig "run(address,address,address,address,address,address,address)" \
 $launchAddress \
-$stakeAddress
+$stakeAddress \
+$submitAddress \
+$voteAddress \
+$joinAddress \
+$verifyAddress \
+$mintAddress

@@ -6,6 +6,12 @@ import "forge-std/Test.sol";
 import "../src/LOVE20TokenViewer.sol";
 import "./mock/MockLOVE20Launch.sol";
 import "./mock/MockLOVE20Stake.sol";
+import "./mock/MockLOVE20Hub.sol";
+import "./mock/MockLOVE20Submit.sol";
+import "./mock/MockLOVE20Vote.sol";
+import "./mock/MockLOVE20Join.sol";
+import "./mock/MockLOVE20Verify.sol";
+import "./mock/MockLOVE20Mint.sol";
 import "./mock/MockTokens.sol";
 
 contract LOVE20TokenViewerTest is Test {
@@ -13,6 +19,12 @@ contract LOVE20TokenViewerTest is Test {
 
     MockILOVE20Launch mockLaunch;
     MockILOVE20Stake mockStake;
+    MockLOVE20Hub mockHub;
+    MockILOVE20Submit mockSubmit;
+    MockILOVE20Vote mockVote;
+    MockILOVE20Join mockJoin;
+    MockILOVE20Verify mockVerify;
+    MockILOVE20Mint mockMint;
     MockLOVE20Token mockERC20;
     MockLOVE20Token mockParentToken;
 
@@ -21,119 +33,63 @@ contract LOVE20TokenViewerTest is Test {
         mockParentToken = new MockLOVE20Token("PARENT", address(0));
         mockERC20 = new MockLOVE20Token("TEST", address(mockParentToken));
         mockStake = new MockILOVE20Stake();
+        mockSubmit = new MockILOVE20Submit();
+        mockVote = new MockILOVE20Vote();
+        mockJoin = new MockILOVE20Join(address(mockSubmit), address(mockJoin));
+        mockVerify = new MockILOVE20Verify();
+        mockMint = new MockILOVE20Mint();
 
         // Deploy MockILOVE20Launch with mockERC20's address
-        mockLaunch = new MockILOVE20Launch(
-            address(mockERC20),
-            address(mockStake)
-        );
+        mockLaunch = new MockILOVE20Launch(address(mockERC20), address(mockStake));
 
         // Deploy the contract under test
         viewer = new LOVE20TokenViewer();
-        viewer.init(address(mockLaunch), address(mockStake));
+        viewer.init(
+            address(mockLaunch),
+            address(mockStake),
+            address(mockSubmit),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
     }
 
     // Test init function
     function testInitFunction() public view {
-        assertEq(
-            viewer.launchAddress(),
-            address(mockLaunch),
-            "launchAddress should be set correctly"
-        );
-        assertEq(
-            viewer.stakeAddress(),
-            address(mockStake),
-            "stakeAddress should be set correctly"
-        );
+        assertEq(viewer.launchAddress(), address(mockLaunch), "launchAddress should be set correctly");
+        assertEq(viewer.stakeAddress(), address(mockStake), "stakeAddress should be set correctly");
     }
 
     // Test tokenDetail function
     function testTokenDetail() public view {
-        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer
-            .tokenDetail(address(mockERC20));
+        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetail(address(mockERC20));
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
         assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
         assertEq(tokenInfo.decimals, 18, "decimals should be 18");
-        assertEq(
-            tokenInfo.parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
-        assertEq(
-            tokenInfo.parentTokenSymbol,
-            "TEST",
-            "parentSymbol should be 'TEST'"
-        );
-        assertEq(
-            tokenInfo.parentTokenName,
-            "TEST",
-            "parentName should be 'TEST'"
-        );
-        assertNotEq(
-            tokenInfo.slAddress,
-            address(0),
-            "slAddress should not be 0"
-        );
-        assertNotEq(
-            tokenInfo.stAddress,
-            address(0),
-            "stAddress should not be 0"
-        );
-        assertNotEq(
-            tokenInfo.uniswapV2PairAddress,
-            address(0),
-            "uniswapV2PairAddress should be 0"
-        );
-        assertEq(
-            tokenInfo.initialStakeRound,
-            42,
-            "initialStakeRound should be 42"
-        );
-        assertEq(
-            info.parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
-        assertEq(
-            info.parentTokenFundraisingGoal,
-            1000000,
-            "parentTokenFundraisingGoal should be 1000000"
-        );
+        assertEq(tokenInfo.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
+        assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+        assertEq(tokenInfo.parentTokenName, "TEST", "parentName should be 'TEST'");
+        assertNotEq(tokenInfo.slAddress, address(0), "slAddress should not be 0");
+        assertNotEq(tokenInfo.stAddress, address(0), "stAddress should not be 0");
+        assertNotEq(tokenInfo.uniswapV2PairAddress, address(0), "uniswapV2PairAddress should be 0");
+        assertEq(tokenInfo.initialStakeRound, 42, "initialStakeRound should be 42");
+        assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
+        assertEq(info.parentTokenFundraisingGoal, 1000000, "parentTokenFundraisingGoal should be 1000000");
         assertEq(info.hasEnded, false, "hasEnded should be false");
     }
 
     // Test tokenDetailBySymbol function
     function testTokenDetailBySymbol() public view {
-        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer
-            .tokenDetailBySymbol("TEST");
+        (TokenInfo memory tokenInfo, LaunchInfo memory info) = viewer.tokenDetailBySymbol("TEST");
         assertEq(tokenInfo.symbol, "TEST", "symbol should be 'TEST'");
         assertEq(tokenInfo.name, "TEST", "name should be 'TEST'");
         assertEq(tokenInfo.decimals, 18, "decimals should be 18");
-        assertEq(
-            tokenInfo.parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
-        assertEq(
-            tokenInfo.parentTokenSymbol,
-            "TEST",
-            "parentSymbol should be 'TEST'"
-        );
-        assertEq(
-            tokenInfo.parentTokenName,
-            "TEST",
-            "parentName should be 'TEST'"
-        );
-        assertEq(
-            tokenInfo.initialStakeRound,
-            42,
-            "initialStakeRound should be 42"
-        );
-        assertEq(
-            info.parentTokenAddress,
-            address(mockERC20),
-            "parentTokenAddress should be mockERC20's address"
-        );
+        assertEq(tokenInfo.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
+        assertEq(tokenInfo.parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+        assertEq(tokenInfo.parentTokenName, "TEST", "parentName should be 'TEST'");
+        assertEq(tokenInfo.initialStakeRound, 42, "initialStakeRound should be 42");
+        assertEq(info.parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address");
     }
 
     // Test tokenDetails function
@@ -142,10 +98,7 @@ contract LOVE20TokenViewerTest is Test {
         tokenAddresses[0] = address(mockERC20);
         tokenAddresses[1] = address(mockERC20);
 
-        (
-            TokenInfo[] memory tokenInfos,
-            LaunchInfo[] memory launchInfos
-        ) = viewer.tokenDetails(tokenAddresses);
+        (TokenInfo[] memory tokenInfos, LaunchInfo[] memory launchInfos) = viewer.tokenDetails(tokenAddresses);
         assertEq(tokenInfos.length, 2, "Should return two tokenInfos");
         assertEq(launchInfos.length, 2, "Should return two launchInfos");
 
@@ -154,25 +107,11 @@ contract LOVE20TokenViewerTest is Test {
             assertEq(tokenInfos[i].name, "TEST", "name should be 'TEST'");
             assertEq(tokenInfos[i].decimals, 18, "decimals should be 18");
             assertEq(
-                tokenInfos[i].parentTokenAddress,
-                address(mockERC20),
-                "parentTokenAddress should be mockERC20's address"
+                tokenInfos[i].parentTokenAddress, address(mockERC20), "parentTokenAddress should be mockERC20's address"
             );
-            assertEq(
-                tokenInfos[i].parentTokenSymbol,
-                "TEST",
-                "parentSymbol should be 'TEST'"
-            );
-            assertEq(
-                tokenInfos[i].parentTokenName,
-                "TEST",
-                "parentName should be 'TEST'"
-            );
-            assertEq(
-                tokenInfos[i].initialStakeRound,
-                42,
-                "initialStakeRound should be 42"
-            );
+            assertEq(tokenInfos[i].parentTokenSymbol, "TEST", "parentSymbol should be 'TEST'");
+            assertEq(tokenInfos[i].parentTokenName, "TEST", "parentName should be 'TEST'");
+            assertEq(tokenInfos[i].initialStakeRound, 42, "initialStakeRound should be 42");
             assertEq(
                 launchInfos[i].parentTokenAddress,
                 address(mockERC20),
@@ -183,43 +122,14 @@ contract LOVE20TokenViewerTest is Test {
 
     // Test tokenPairInfoWithAccount function
     function testTokenPairInfoWithAccount() public view {
-        PairInfoWithAccount memory pairInfo = viewer.tokenPairInfoWithAccount(
-            address(this),
-            address(mockERC20)
-        );
+        PairInfoWithAccount memory pairInfo = viewer.tokenPairInfoWithAccount(address(this), address(mockERC20));
 
         // pairAddress should be the Uniswap pair address, not the token address
-        assertNotEq(
-            pairInfo.pairAddress,
-            address(0),
-            "Pair address should not be zero"
-        );
-        assertEq(
-            pairInfo.balanceOfToken,
-            1000000 ether,
-            "Incorrect token balance"
-        );
-        assertEq(
-            pairInfo.balanceOfParentToken,
-            1000000 ether,
-            "Incorrect parent token balance"
-        );
-        assertEq(
-            pairInfo.allowanceOfToken,
-            1000000 ether,
-            "Incorrect token allowance"
-        );
-        assertEq(
-            pairInfo.allowanceOfParentToken,
-            1000000 ether,
-            "Incorrect parent token allowance"
-        );
+        assertNotEq(pairInfo.pairAddress, address(0), "Pair address should not be zero");
+        assertEq(pairInfo.balanceOfToken, 1000000 ether, "Incorrect token balance");
+        assertEq(pairInfo.balanceOfParentToken, 1000000 ether, "Incorrect parent token balance");
         assertEq(pairInfo.pairReserveToken, 0, "Incorrect pair reserve token");
-        assertEq(
-            pairInfo.pairReserveParentToken,
-            0,
-            "Incorrect pair reserve parent token"
-        );
+        assertEq(pairInfo.pairReserveParentToken, 0, "Incorrect pair reserve parent token");
     }
 
     // Test tokensByPage function
@@ -227,16 +137,8 @@ contract LOVE20TokenViewerTest is Test {
         // Test normal range
         address[] memory tokens = viewer.tokensByPage(0, 1);
         assertEq(tokens.length, 2, "Should return two tokens");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "First token should be mockERC20"
-        );
-        assertEq(
-            tokens[1],
-            address(mockERC20),
-            "Second token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "First token should be mockERC20");
+        assertEq(tokens[1], address(mockERC20), "Second token should be mockERC20");
 
         // Test single token
         tokens = viewer.tokensByPage(0, 0);
@@ -245,11 +147,7 @@ contract LOVE20TokenViewerTest is Test {
 
         // Test when end exceeds range
         tokens = viewer.tokensByPage(0, 10);
-        assertEq(
-            tokens.length,
-            2,
-            "Should return two tokens when end exceeds range"
-        );
+        assertEq(tokens.length, 2, "Should return two tokens when end exceeds range");
     }
 
     // Test tokensByPage edge cases
@@ -265,31 +163,15 @@ contract LOVE20TokenViewerTest is Test {
 
     // Test childTokensByPage function
     function testChildTokensByPage() public {
-        address[] memory tokens = viewer.childTokensByPage(
-            address(mockERC20),
-            0,
-            1
-        );
+        address[] memory tokens = viewer.childTokensByPage(address(mockERC20), 0, 1);
         assertEq(tokens.length, 2, "Should return two child tokens");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "First child token should be mockERC20"
-        );
-        assertEq(
-            tokens[1],
-            address(mockERC20),
-            "Second child token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "First child token should be mockERC20");
+        assertEq(tokens[1], address(mockERC20), "Second child token should be mockERC20");
 
         // Test single token
         tokens = viewer.childTokensByPage(address(mockERC20), 1, 1);
         assertEq(tokens.length, 1, "Should return one child token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Child token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Child token should be mockERC20");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -303,19 +185,11 @@ contract LOVE20TokenViewerTest is Test {
     function testLaunchingTokensByPage() public {
         address[] memory tokens = viewer.launchingTokensByPage(0, 0);
         assertEq(tokens.length, 1, "Should return one launching token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Launching token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Launching token should be mockERC20");
 
         // Test when end exceeds range
         tokens = viewer.launchingTokensByPage(0, 10);
-        assertEq(
-            tokens.length,
-            1,
-            "Should return one launching token when end exceeds range"
-        );
+        assertEq(tokens.length, 1, "Should return one launching token when end exceeds range");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -329,19 +203,11 @@ contract LOVE20TokenViewerTest is Test {
     function testLaunchedTokensByPage() public {
         address[] memory tokens = viewer.launchedTokensByPage(0, 0);
         assertEq(tokens.length, 1, "Should return one launched token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Launched token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Launched token should be mockERC20");
 
         // Test when end exceeds range
         tokens = viewer.launchedTokensByPage(0, 10);
-        assertEq(
-            tokens.length,
-            1,
-            "Should return one launched token when end exceeds range"
-        );
+        assertEq(tokens.length, 1, "Should return one launched token when end exceeds range");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -353,25 +219,13 @@ contract LOVE20TokenViewerTest is Test {
 
     // Test launchingChildTokensByPage function
     function testLaunchingChildTokensByPage() public {
-        address[] memory tokens = viewer.launchingChildTokensByPage(
-            address(mockERC20),
-            0,
-            0
-        );
+        address[] memory tokens = viewer.launchingChildTokensByPage(address(mockERC20), 0, 0);
         assertEq(tokens.length, 1, "Should return one launching child token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Launching child token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Launching child token should be mockERC20");
 
         // Test when end exceeds range
         tokens = viewer.launchingChildTokensByPage(address(mockERC20), 0, 10);
-        assertEq(
-            tokens.length,
-            1,
-            "Should return one launching child token when end exceeds range"
-        );
+        assertEq(tokens.length, 1, "Should return one launching child token when end exceeds range");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -383,25 +237,13 @@ contract LOVE20TokenViewerTest is Test {
 
     // Test launchedChildTokensByPage function
     function testLaunchedChildTokensByPage() public {
-        address[] memory tokens = viewer.launchedChildTokensByPage(
-            address(mockERC20),
-            0,
-            0
-        );
+        address[] memory tokens = viewer.launchedChildTokensByPage(address(mockERC20), 0, 0);
         assertEq(tokens.length, 1, "Should return one launched child token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Launched child token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Launched child token should be mockERC20");
 
         // Test when end exceeds range
         tokens = viewer.launchedChildTokensByPage(address(mockERC20), 0, 10);
-        assertEq(
-            tokens.length,
-            1,
-            "Should return one launched child token when end exceeds range"
-        );
+        assertEq(tokens.length, 1, "Should return one launched child token when end exceeds range");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -413,25 +255,13 @@ contract LOVE20TokenViewerTest is Test {
 
     // Test participatedTokensByPage function
     function testParticipatedTokensByPage() public {
-        address[] memory tokens = viewer.participatedTokensByPage(
-            address(this),
-            0,
-            0
-        );
+        address[] memory tokens = viewer.participatedTokensByPage(address(this), 0, 0);
         assertEq(tokens.length, 1, "Should return one participated token");
-        assertEq(
-            tokens[0],
-            address(mockERC20),
-            "Participated token should be mockERC20"
-        );
+        assertEq(tokens[0], address(mockERC20), "Participated token should be mockERC20");
 
         // Test when end exceeds range
         tokens = viewer.participatedTokensByPage(address(this), 0, 10);
-        assertEq(
-            tokens.length,
-            1,
-            "Should return one participated token when end exceeds range"
-        );
+        assertEq(tokens.length, 1, "Should return one participated token when end exceeds range");
 
         // Test boundary conditions
         vm.expectRevert("Invalid range");
@@ -440,4 +270,46 @@ contract LOVE20TokenViewerTest is Test {
         vm.expectRevert("Out of range");
         viewer.participatedTokensByPage(address(this), 10, 20);
     }
+
+    // Test tokenStatistics function
+    function testTokenStatistics() public view {
+        TokenStats memory stats = viewer.tokenStatistics(address(mockERC20));
+
+        // Minting status
+        assertEq(stats.maxSupply, 10000000 ether);
+        assertEq(stats.totalSupply, 1000000000000000000000000); // 1e24 from MockLOVE20Token
+        assertEq(stats.reservedAvailable, 2000);
+        assertEq(stats.rewardAvailable, 50);
+
+        // Pair reserves (mocks return zero; totalLpSupply returns block.timestamp)
+        assertEq(stats.pairReserveParentToken, 0);
+        assertEq(stats.pairReserveToken, 0);
+        assertEq(stats.totalLpSupply, block.timestamp);
+
+        // Token balances
+        assertEq(stats.stakedTokenAmountForSt, 1000000 ether); // love20.balanceOf(stakeAddress)
+        assertEq(stats.joinedTokenAmount, 1000000 ether); // love20.balanceOf(joinAddress)
+
+        // SL/ST totals
+        assertEq(stats.totalSLSupply, 1000000 ether);
+        assertEq(stats.totalSTSupply, 1000000000000000000000000); // 1e24
+
+        // SL withdrawable amounts
+        assertEq(stats.parentTokenAmountForSl, 1000000000000000000000000); // 1e24
+        assertEq(stats.tokenAmountForSl, 1000000000000000000000000); // 1e24
+
+        // Launch status
+        assertEq(stats.parentPool, 1000 ether);
+
+        // Governance status
+        assertEq(stats.finishedRounds, 0); // currentRound(1) - initial(42) - 2 => clamped to 0
+        assertEq(stats.actionsCount, 3);
+        assertEq(stats.joiningActionsCount, 3);
+
+        // Child token status
+        assertEq(stats.childTokensCount, 2); // from mockLaunch.childTokensCount()
+        assertEq(stats.launchingChildTokensCount, 1); // from mockLaunch.launchingChildTokensCount()
+        assertEq(stats.launchedChildTokensCount, 1); // from mockLaunch.launchedChildTokensCount()
+    }
+
 }

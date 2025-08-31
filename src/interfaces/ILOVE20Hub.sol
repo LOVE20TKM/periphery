@@ -1,12 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity =0.8.17;
+
 interface ILOVE20HubEvents {
     // Events
-    event ContributeFirstTokenWithETH(
-        address indexed tokenAddress,
-        address indexed to,
-        uint256 amount
-    );
+    event ContributeFirstTokenWithETH(address indexed tokenAddress, address indexed to, uint256 amount);
 
     event StakeLiquidity(
         address indexed tokenAddress,
@@ -43,10 +40,7 @@ interface ILOVE20Hub {
         address mintAddress_
     ) external;
 
-    function contributeFirstTokenWithETH(
-        address tokenAddress,
-        address to
-    ) external payable;
+    function contributeFirstTokenWithETH(address tokenAddress, address to) external payable;
 
     function stakeLiquidity(
         address tokenAddress,

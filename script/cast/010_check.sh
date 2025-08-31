@@ -3,6 +3,7 @@ echo "-------------------- params check --------------------"
 # check DataViewer.params & address.params
 check_equal "tokenViewer: launchAddress" $launchAddress $(cast_call $tokenViewerAddress "launchAddress()(address)")
 check_equal "tokenViewer: stakeAddress" $stakeAddress $(cast_call $tokenViewerAddress "stakeAddress()(address)")
+check_equal "tokenViewer: love20HubAddress" $love20HubAddress $(cast_call $tokenViewerAddress "hubAddress()(address)")
 
 check_equal "roundViewer: stakeAddress" $stakeAddress $(cast_call $roundViewerAddress "stakeAddress()(address)")
 check_equal "roundViewer: submitAddress" $submitAddress $(cast_call $roundViewerAddress "submitAddress()(address)")

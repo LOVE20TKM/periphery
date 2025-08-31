@@ -10,7 +10,5 @@ interface IPhase is IPhaseErrors {
     function phaseBlocks() external view returns (uint256);
     function currentRound() external view returns (uint256);
 
-    function roundByBlockNumber(
-        uint256 blockNumber
-    ) external view returns (uint256);
+    function roundByBlockNumber(uint256 blockNumber) external view returns (uint256);
 }

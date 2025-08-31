@@ -59,30 +59,20 @@ contract MockLOVE20Token is ILOVE20Token {
         return 1000000 ether; // Return sufficient balance for testing
     }
 
-    function allowance(
-        address owner,
-        address spender
-    ) external pure returns (uint256) {
+    function allowance(address owner, address spender) external pure returns (uint256) {
         owner;
         spender;
         return 1000000 ether; // Return sufficient allowance
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external pure returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external pure returns (bool) {
         from;
         to;
         value;
         return true; // Always succeed for testing
     }
 
-    function approve(
-        address spender,
-        uint256 value
-    ) external pure returns (bool) {
+    function approve(address spender, uint256 value) external pure returns (bool) {
         spender;
         value;
         return true; // Always succeed for testing
@@ -103,9 +93,7 @@ contract MockLOVE20Token is ILOVE20Token {
         amount; // Mock implementation
     }
 
-    function burnForParentToken(
-        uint256 amount
-    ) external pure returns (uint256 parentTokenAmount) {
+    function burnForParentToken(uint256 amount) external pure returns (uint256 parentTokenAmount) {
         amount; // Mock implementation
         return amount / 2; // Return half as parent token amount for testing
     }
@@ -115,10 +103,7 @@ contract MockLOVE20Token is ILOVE20Token {
         amount; // Mock implementation
     }
 
-    function mintForParentToken(
-        address to,
-        uint256 amount
-    ) external pure returns (uint256 parentTokenAmount) {
+    function mintForParentToken(address to, uint256 amount) external pure returns (uint256 parentTokenAmount) {
         to;
         amount; // Mock implementation
         return amount * 2; // Return double as parent token amount for testing
@@ -156,17 +141,20 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         );
     }
 
-    function tokenAmountsBySlAmount(
-        uint256 slAmount
-    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+    function tokenAmountsBySlAmount(uint256 slAmount)
+        external
+        pure
+        returns (uint256 tokenAmount, uint256 parentTokenAmount)
+    {
         slAmount; // Mock implementation
         return (1000000000000000000000000, 1000000000000000000000000);
     }
 
-    function slAmountsByTokenAmount(
-        uint256 tokenAmount,
-        uint256 parentTokenAmount
-    ) external pure returns (uint256 slAmount) {
+    function slAmountsByTokenAmount(uint256 tokenAmount, uint256 parentTokenAmount)
+        external
+        pure
+        returns (uint256 slAmount)
+    {
         tokenAmount;
         parentTokenAmount; // Mock implementation
         return 1000000000000000000000000;
@@ -180,11 +168,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         return true;
     }
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return true;
     }
 
@@ -192,11 +176,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         return _uniswapV2Pair;
     }
 
-    function uniswapV2PairReserves()
-        external
-        view
-        returns (uint256, uint256, uint256)
-    {
+    function uniswapV2PairReserves() external view returns (uint256, uint256, uint256) {
         return (0, 0, block.timestamp);
     }
 
@@ -204,9 +184,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
         // Mock implementation
     }
 
-    function burn(
-        address to
-    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+    function burn(address to) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
         to; // Mock implementation
         return (1000, 500);
     }
@@ -259,12 +237,7 @@ contract MockLOVE20SLToken is ILOVE20SLToken {
     function tokenAmounts()
         external
         pure
-        returns (
-            uint256 tokenAmount,
-            uint256 parentTokenAmount,
-            uint256 feeTokenAmount,
-            uint256 feeParentTokenAmount
-        )
+        returns (uint256 tokenAmount, uint256 parentTokenAmount, uint256 feeTokenAmount, uint256 feeParentTokenAmount)
     {
         return (1000000000000000000000000, 1000000000000000000000000, 0, 0);
     }
@@ -280,23 +253,14 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
     address private _token0;
     address private _token1;
 
-    constructor(
-        uint256 tokenReserve,
-        uint256 parentTokenReserve,
-        address token0Address,
-        address token1Address
-    ) {
+    constructor(uint256 tokenReserve, uint256 parentTokenReserve, address token0Address, address token1Address) {
         _tokenReserve = tokenReserve;
         _parentTokenReserve = parentTokenReserve;
         _token0 = token0Address;
         _token1 = token1Address;
     }
 
-    function getReserves()
-        external
-        view
-        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)
-    {
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) {
         return (uint112(_tokenReserve), uint112(_parentTokenReserve), 0);
     }
 
@@ -313,30 +277,27 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
         return keccak256("MockUniswapV2Pair");
     }
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint) {
+    function MINIMUM_LIQUIDITY() external pure returns (uint256) {
         return 1000;
     }
 
     function PERMIT_TYPEHASH() external pure returns (bytes32) {
-        return
-            keccak256(
-                "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-            );
+        return keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     }
 
-    function allowance(address, address) external pure returns (uint) {
+    function allowance(address, address) external pure returns (uint256) {
         return 1000000 ether;
     }
 
-    function approve(address, uint) external pure returns (bool) {
+    function approve(address, uint256) external pure returns (bool) {
         return true;
     }
 
-    function balanceOf(address) external pure returns (uint) {
+    function balanceOf(address) external pure returns (uint256) {
         return 1000000 ether;
     }
 
-    function burn(address) external pure returns (uint amount0, uint amount1) {
+    function burn(address) external pure returns (uint256 amount0, uint256 amount1) {
         return (1000, 2000);
     }
 
@@ -352,11 +313,11 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
         // Mock implementation
     }
 
-    function kLast() external pure returns (uint) {
+    function kLast() external pure returns (uint256) {
         return 1000000;
     }
 
-    function mint(address) external pure returns (uint liquidity) {
+    function mint(address) external pure returns (uint256 liquidity) {
         return 5000;
     }
 
@@ -364,27 +325,19 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
         return "Mock LP Token";
     }
 
-    function nonces(address) external pure returns (uint) {
+    function nonces(address) external pure returns (uint256) {
         return 1;
     }
 
-    function permit(
-        address,
-        address,
-        uint,
-        uint,
-        uint8,
-        bytes32,
-        bytes32
-    ) external pure {
+    function permit(address, address, uint256, uint256, uint8, bytes32, bytes32) external pure {
         // Mock implementation
     }
 
-    function price0CumulativeLast() external pure returns (uint) {
+    function price0CumulativeLast() external pure returns (uint256) {
         return 1000000;
     }
 
-    function price1CumulativeLast() external pure returns (uint) {
+    function price1CumulativeLast() external pure returns (uint256) {
         return 2000000;
     }
 
@@ -392,7 +345,7 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
         // Mock implementation
     }
 
-    function swap(uint, uint, address, bytes calldata) external pure {
+    function swap(uint256, uint256, address, bytes calldata) external pure {
         // Mock implementation
     }
 
@@ -404,15 +357,15 @@ contract MockUniswapV2Pair is IUniswapV2Pair {
         // Mock implementation
     }
 
-    function totalSupply() external pure returns (uint) {
+    function totalSupply() external pure returns (uint256) {
         return 1000000 ether;
     }
 
-    function transfer(address, uint) external pure returns (bool) {
+    function transfer(address, uint256) external pure returns (bool) {
         return true;
     }
 
-    function transferFrom(address, address, uint) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return true;
     }
 }
@@ -456,11 +409,7 @@ contract MockERC20WithReserves {
         return _uniswapV2Pair;
     }
 
-    function getReserves()
-        external
-        view
-        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)
-    {
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) {
         return (uint112(_tokenReserve), uint112(_parentTokenReserve), 0);
     }
 
@@ -481,11 +430,7 @@ contract MockERC20WithReserves {
         return 1000000 ether; // Return sufficient allowance
     }
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return true; // Always succeed
     }
 
@@ -508,11 +453,7 @@ contract MockParentToken {
         return 1000000 ether; // Return sufficient allowance
     }
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return true; // Always succeed
     }
 
@@ -533,22 +474,23 @@ contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
     constructor(address tokenAddr, address parentTokenAddr) {
         _tokenAddress = tokenAddr;
         _parentTokenAddress = parentTokenAddr;
-        _uniswapV2Pair = address(
-            new MockUniswapV2Pair(0, 0, tokenAddr, parentTokenAddr)
-        );
+        _uniswapV2Pair = address(new MockUniswapV2Pair(0, 0, tokenAddr, parentTokenAddr));
     }
 
-    function tokenAmountsBySlAmount(
-        uint256 slAmount
-    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+    function tokenAmountsBySlAmount(uint256 slAmount)
+        external
+        pure
+        returns (uint256 tokenAmount, uint256 parentTokenAmount)
+    {
         slAmount; // Mock implementation
         return (1000000000000000000000000, 1000000000000000000000000);
     }
 
-    function slAmountsByTokenAmount(
-        uint256 tokenAmount,
-        uint256 parentTokenAmount
-    ) external pure returns (uint256 slAmount) {
+    function slAmountsByTokenAmount(uint256 tokenAmount, uint256 parentTokenAmount)
+        external
+        pure
+        returns (uint256 slAmount)
+    {
         tokenAmount;
         parentTokenAmount; // Mock implementation
         return 1000000000000000000000000;
@@ -562,11 +504,7 @@ contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
         return true;
     }
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return true;
     }
 
@@ -574,11 +512,7 @@ contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
         return _uniswapV2Pair;
     }
 
-    function uniswapV2PairReserves()
-        external
-        view
-        returns (uint256, uint256, uint256)
-    {
+    function uniswapV2PairReserves() external view returns (uint256, uint256, uint256) {
         return (0, 0, block.timestamp);
     }
 
@@ -586,9 +520,7 @@ contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
         // Mock implementation
     }
 
-    function burn(
-        address to
-    ) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
+    function burn(address to) external pure returns (uint256 tokenAmount, uint256 parentTokenAmount) {
         to; // Mock implementation
         return (1000, 500);
     }
@@ -641,12 +573,7 @@ contract MockLOVE20SLTokenWithTokens is ILOVE20SLToken {
     function tokenAmounts()
         external
         pure
-        returns (
-            uint256 tokenAmount,
-            uint256 parentTokenAmount,
-            uint256 feeTokenAmount,
-            uint256 feeParentTokenAmount
-        )
+        returns (uint256 tokenAmount, uint256 parentTokenAmount, uint256 feeTokenAmount, uint256 feeParentTokenAmount)
     {
         return (1000000000000000000000000, 1000000000000000000000000, 0, 0);
     }

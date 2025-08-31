@@ -46,8 +46,8 @@ contract MockILOVE20Join is ILOVE20Join {
         uint256
     ) external pure override returns (address[] memory) {
         address[] memory accounts = new address[](2);
-        accounts[0] = address(0x1);
-        accounts[1] = address(0x2);
+        accounts[0] = address(0xa);
+        accounts[1] = address(0xb);
         return accounts;
     }
 

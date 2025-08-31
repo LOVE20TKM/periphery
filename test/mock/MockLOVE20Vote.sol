@@ -8,22 +8,19 @@ import "../../src/interfaces/ILOVE20Vote.sol";
  * @dev LOVE20Vote接口的模拟实现
  */
 contract MockILOVE20Vote is ILOVE20Vote {
-    function votesNumByActionId(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external pure override returns (uint256) {
+    function votesNumByActionId(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         tokenAddress;
         round;
         actionId;
         return 100;
     }
 
-    function votesNumsByAccount(
-        address tokenAddress,
-        uint256 round,
-        address account
-    )
+    function votesNumsByAccount(address tokenAddress, uint256 round, address account)
         external
         pure
         override
@@ -40,12 +37,11 @@ contract MockILOVE20Vote is ILOVE20Vote {
         votes[1] = 200;
     }
 
-    function votesNumByAccountByActionId(
-        address tokenAddress,
-        uint256 round,
-        address account,
-        uint256 actionId
-    ) external pure returns (uint256) {
+    function votesNumByAccountByActionId(address tokenAddress, uint256 round, address account, uint256 actionId)
+        external
+        pure
+        returns (uint256)
+    {
         tokenAddress;
         round;
         account;
@@ -53,43 +49,39 @@ contract MockILOVE20Vote is ILOVE20Vote {
         return 100;
     }
 
-    function votedActionIdsCount(
-        address tokenAddress,
-        uint256 round
-    ) external pure returns (uint256) {
+    function votedActionIdsCount(address tokenAddress, uint256 round) external pure returns (uint256) {
         tokenAddress;
         round;
         return 3;
     }
 
-    function votedActionIdsAtIndex(
-        address tokenAddress,
-        uint256 round,
-        uint256 index
-    ) external pure returns (uint256) {
+    function votedActionIdsAtIndex(address tokenAddress, uint256 round, uint256 index)
+        external
+        pure
+        returns (uint256)
+    {
         tokenAddress;
         round;
         index;
         return 1;
     }
 
-    function accountVotedActionIdsCount(
-        address tokenAddress,
-        uint256 round,
-        address account
-    ) external pure returns (uint256) {
+    function accountVotedActionIdsCount(address tokenAddress, uint256 round, address account)
+        external
+        pure
+        returns (uint256)
+    {
         tokenAddress;
         round;
         account;
         return 2;
     }
 
-    function accountVotedActionIdsAtIndex(
-        address tokenAddress,
-        uint256 round,
-        address account,
-        uint256 index
-    ) external pure returns (uint256) {
+    function accountVotedActionIdsAtIndex(address tokenAddress, uint256 round, address account, uint256 index)
+        external
+        pure
+        returns (uint256)
+    {
         tokenAddress;
         round;
         account;
@@ -98,10 +90,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
     }
 
     // Add missing interface implementations
-    function canVote(
-        address tokenAddress,
-        address account
-    ) external pure returns (bool) {
+    function canVote(address tokenAddress, address account) external pure returns (bool) {
         tokenAddress;
         account;
         return true;
@@ -124,11 +113,7 @@ contract MockILOVE20Vote is ILOVE20Vote {
         return 1;
     }
 
-    function isActionIdVoted(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external pure returns (bool) {
+    function isActionIdVoted(address tokenAddress, uint256 round, uint256 actionId) external pure returns (bool) {
         tokenAddress;
         round;
         actionId;
@@ -155,22 +140,42 @@ contract MockILOVE20Vote is ILOVE20Vote {
         return 500;
     }
 
-    function votesNumByAccount(
-        address,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function votesNumByAccount(address, uint256, address) external pure returns (uint256) {
         return 100;
     }
 
-    function votesNumsByAccountByActionIds(
-        address,
-        uint256,
-        address,
-        uint256[] memory
-    ) external pure returns (uint256[] memory) {
+    function votesNumsByAccountByActionIds(address, uint256, address, uint256[] memory)
+        external
+        pure
+        returns (uint256[] memory)
+    {
         uint256[] memory votes = new uint256[](1);
         votes[0] = 100;
         return votes;
+    }
+
+    function accountsByActionIdCount(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        pure
+        returns (uint256)
+    {
+        tokenAddress;
+        round;
+        actionId;
+        return 3; // 模拟3个投票者
+    }
+
+    function accountsByActionIdAtIndex(address tokenAddress, uint256 round, uint256 actionId, uint256 index)
+        external
+        pure
+        returns (address)
+    {
+        tokenAddress;
+        round;
+        actionId;
+        if (index == 0) return address(0x1);
+        if (index == 1) return address(0x2);
+        if (index == 2) return address(0x3);
+        return address(0);
     }
 }

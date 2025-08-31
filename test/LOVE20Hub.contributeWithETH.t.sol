@@ -36,10 +36,7 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
         mockERC20 = new MockLOVE20Token("TEST", address(0));
         mockStake = new MockILOVE20Stake();
         mockSubmit = new MockILOVE20Submit();
-        mockLaunch = new MockILOVE20LaunchForHub(
-            address(mockERC20),
-            address(mockStake)
-        );
+        mockLaunch = new MockILOVE20LaunchForHub(address(mockERC20), address(mockStake));
         mockVote = new MockILOVE20Vote();
         mockJoin = new MockILOVE20Join(address(mockSubmit), address(mockJoin));
         mockVerify = new MockILOVE20Verify();
@@ -69,45 +66,14 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
         );
 
         // Verify all addresses are set correctly
-        assertEq(
-            hub.WETHAddress(),
-            address(mockWETH),
-            "WETH address should be set correctly"
-        );
-        assertEq(
-            hub.launchAddress(),
-            address(mockLaunch),
-            "Launch address should be set correctly"
-        );
-        assertEq(
-            hub.submitAddress(),
-            address(mockSubmit),
-            "Submit address should be set correctly"
-        );
-        assertEq(
-            hub.voteAddress(),
-            address(mockVote),
-            "Vote address should be set correctly"
-        );
-        assertEq(
-            hub.joinAddress(),
-            address(mockJoin),
-            "Join address should be set correctly"
-        );
-        assertEq(
-            hub.verifyAddress(),
-            address(mockVerify),
-            "Verify address should be set correctly"
-        );
-        assertEq(
-            hub.mintAddress(),
-            address(mockMint),
-            "Mint address should be set correctly"
-        );
-        assertTrue(
-            hub.initialized(),
-            "Contract should be marked as initialized"
-        );
+        assertEq(hub.WETHAddress(), address(mockWETH), "WETH address should be set correctly");
+        assertEq(hub.launchAddress(), address(mockLaunch), "Launch address should be set correctly");
+        assertEq(hub.submitAddress(), address(mockSubmit), "Submit address should be set correctly");
+        assertEq(hub.voteAddress(), address(mockVote), "Vote address should be set correctly");
+        assertEq(hub.joinAddress(), address(mockJoin), "Join address should be set correctly");
+        assertEq(hub.verifyAddress(), address(mockVerify), "Verify address should be set correctly");
+        assertEq(hub.mintAddress(), address(mockMint), "Mint address should be set correctly");
+        assertTrue(hub.initialized(), "Contract should be marked as initialized");
     }
 
     function testInitAlreadyInitialized() public {
@@ -154,34 +120,15 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
 
         // Test successful contribution
         vm.prank(user);
-        hub.contributeFirstTokenWithETH{value: contributeAmount}(
-            tokenAddress,
-            user
-        );
+        hub.contributeFirstTokenWithETH{value: contributeAmount}(tokenAddress, user);
 
         // Verify WETH balance
-        assertEq(
-            mockWETH.balanceOf(address(mockLaunch)),
-            contributeAmount,
-            "Hub should hold WETH"
-        );
+        assertEq(mockWETH.balanceOf(address(mockLaunch)), contributeAmount, "Hub should hold WETH");
 
         // Verify Launch contract received correct calls
-        assertEq(
-            mockLaunch.lastContributeToken(),
-            tokenAddress,
-            "Passed token address should be correct"
-        );
-        assertEq(
-            mockLaunch.lastContributeAmount(),
-            contributeAmount,
-            "Passed amount should be correct"
-        );
-        assertEq(
-            mockLaunch.lastContributeTo(),
-            user,
-            "Passed recipient address should be correct"
-        );
+        assertEq(mockLaunch.lastContributeToken(), tokenAddress, "Passed token address should be correct");
+        assertEq(mockLaunch.lastContributeAmount(), contributeAmount, "Passed amount should be correct");
+        assertEq(mockLaunch.lastContributeTo(), user, "Passed recipient address should be correct");
     }
 
     function testContributeWithETHZeroValue() public {
@@ -238,10 +185,7 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
         // Invalid recipient address should fail
         vm.expectRevert("Invalid recipient address");
         vm.prank(user);
-        hub.contributeFirstTokenWithETH{value: 1 ether}(
-            tokenAddress,
-            address(0)
-        );
+        hub.contributeFirstTokenWithETH{value: 1 ether}(tokenAddress, address(0));
     }
 
     function testContributeWithETHEvent() public {
@@ -264,10 +208,7 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
         emit ContributeFirstTokenWithETH(tokenAddress, user, contributeAmount);
 
         vm.prank(user);
-        hub.contributeFirstTokenWithETH{value: contributeAmount}(
-            tokenAddress,
-            user
-        );
+        hub.contributeFirstTokenWithETH{value: contributeAmount}(tokenAddress, user);
     }
 
     function testMultipleContributions() public {
@@ -292,17 +233,10 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
 
         // Second contribution
         vm.prank(user);
-        hub.contributeFirstTokenWithETH{value: secondAmount}(
-            tokenAddress,
-            user
-        );
+        hub.contributeFirstTokenWithETH{value: secondAmount}(tokenAddress, user);
 
         // Verify total WETH balance
-        assertEq(
-            mockWETH.balanceOf(address(mockLaunch)),
-            firstAmount + secondAmount,
-            "Hub should hold all WETH"
-        );
+        assertEq(mockWETH.balanceOf(address(mockLaunch)), firstAmount + secondAmount, "Hub should hold all WETH");
     }
 
     function testFuzzContributeWithETH(uint256 amount) public {
@@ -329,15 +263,7 @@ contract LOVE20HubTest is ILOVE20HubEvents, Test {
         hub.contributeFirstTokenWithETH{value: amount}(tokenAddress, user);
 
         // Verify results
-        assertEq(
-            mockWETH.balanceOf(address(mockLaunch)),
-            amount,
-            "Hub should hold correct amount of WETH"
-        );
-        assertEq(
-            mockLaunch.lastContributeAmount(),
-            amount,
-            "Passed amount should be correct"
-        );
+        assertEq(mockWETH.balanceOf(address(mockLaunch)), amount, "Hub should hold correct amount of WETH");
+        assertEq(mockLaunch.lastContributeAmount(), amount, "Passed amount should be correct");
     }
 }

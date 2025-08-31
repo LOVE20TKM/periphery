@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity =0.8.17;
 
 import "../lib/forge-std/src/Script.sol";
@@ -7,6 +7,7 @@ import {LOVE20RoundViewer} from "../src/LOVE20RoundViewer.sol";
 
 contract DeployRoundViewer is Script {
     function run(
+        address launchAddress_,
         address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
@@ -21,12 +22,7 @@ contract DeployRoundViewer is Script {
 
         vm.broadcast();
         roundViewer.init(
-            stakeAddress_,
-            submitAddress_,
-            voteAddress_,
-            joinAddress_,
-            verifyAddress_,
-            mintAddress_
+            launchAddress_, stakeAddress_, submitAddress_, voteAddress_, joinAddress_, verifyAddress_, mintAddress_
         );
 
         console.log("RoundViewer deployed at", address(roundViewer));

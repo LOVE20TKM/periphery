@@ -12,32 +12,24 @@ contract MockILOVE20Submit is ILOVE20Submit {
         return 3;
     }
 
-    function actionsAtIndex(
-        address,
-        uint256 index
-    ) external view override returns (ActionInfo memory) {
+    function actionsAtIndex(address, uint256 index) external view override returns (ActionInfo memory) {
         return this.actionInfo(address(0), index);
     }
 
-    function actionSubmitsCount(
-        address,
-        uint256
-    ) external pure override returns (uint256) {
+    function actionSubmitsCount(address, uint256) external pure override returns (uint256) {
         return 2;
     }
 
-    function actionSubmitsAtIndex(
-        address,
-        uint256,
-        uint256 index
-    ) external view override returns (ActionSubmitInfo memory) {
+    function actionSubmitsAtIndex(address, uint256, uint256 index)
+        external
+        view
+        override
+        returns (ActionSubmitInfo memory)
+    {
         return ActionSubmitInfo({actionId: index, submitter: address(this)});
     }
 
-    function actionInfo(
-        address tokenAddress,
-        uint256 actionId
-    ) external view override returns (ActionInfo memory) {
+    function actionInfo(address tokenAddress, uint256 actionId) external view override returns (ActionInfo memory) {
         string[] memory verificationKeys = new string[](2);
         verificationKeys[0] = "twitter";
         verificationKeys[1] = "github";
@@ -47,11 +39,7 @@ contract MockILOVE20Submit is ILOVE20Submit {
         verificationInfoGuides[1] = "Please input your github username";
 
         ActionInfo memory actionInfo_ = ActionInfo({
-            head: ActionHead({
-                id: actionId,
-                author: address(this),
-                createAtBlock: block.number
-            }),
+            head: ActionHead({id: actionId, author: address(this), createAtBlock: block.number}),
             body: ActionBody({
                 minStake: 10,
                 maxRandomAccounts: 10,
@@ -78,10 +66,7 @@ contract MockILOVE20Submit is ILOVE20Submit {
         return 2;
     }
 
-    function authorActionIdsAtIndex(
-        address,
-        uint256
-    ) external pure returns (uint256) {
+    function authorActionIdsAtIndex(address, uint256) external pure returns (uint256) {
         return 1;
     }
 
@@ -118,63 +103,56 @@ contract MockILOVE20Submit is ILOVE20Submit {
         // Mock implementation
     }
 
-    function isSubmitted(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external pure returns (bool) {
+    function isSubmitted(address tokenAddress, uint256 round, uint256 actionId) external pure returns (bool) {
         tokenAddress;
         round;
         actionId;
         return false;
     }
 
-    function submitInfo(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external pure returns (ActionSubmitInfo memory) {
+    function submitInfo(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        pure
+        returns (ActionSubmitInfo memory)
+    {
         tokenAddress;
         round;
         actionId;
-        return
-            ActionSubmitInfo({submitter: address(0x123), actionId: actionId});
+        return ActionSubmitInfo({submitter: address(0x123), actionId: actionId});
     }
 
-    function submitInfoBySubmitter(
-        address tokenAddress,
-        uint256 round,
-        address submitter
-    ) external pure returns (ActionSubmitInfo memory) {
+    function submitInfoBySubmitter(address tokenAddress, uint256 round, address submitter)
+        external
+        pure
+        returns (ActionSubmitInfo memory)
+    {
         tokenAddress;
         round;
         submitter;
         return ActionSubmitInfo({submitter: submitter, actionId: 1});
     }
 
-    function submitNewAction(
-        address tokenAddress,
-        ActionBody calldata actionBody
-    ) external pure returns (uint256 actionId) {
+    function submitNewAction(address tokenAddress, ActionBody calldata actionBody)
+        external
+        pure
+        returns (uint256 actionId)
+    {
         tokenAddress;
         actionBody;
         return 1;
     }
 
-    function authorActionIdsCount(
-        address tokenAddress,
-        address author
-    ) external pure returns (uint256) {
+    function authorActionIdsCount(address tokenAddress, address author) external pure returns (uint256) {
         tokenAddress;
         author;
         return 2;
     }
 
-    function authorActionIdsAtIndex(
-        address tokenAddress,
-        address author,
-        uint256 index
-    ) external pure returns (uint256) {
+    function authorActionIdsAtIndex(address tokenAddress, address author, uint256 index)
+        external
+        pure
+        returns (uint256)
+    {
         tokenAddress;
         author;
         index;

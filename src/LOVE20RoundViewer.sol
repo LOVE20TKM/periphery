@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity =0.8.17;
 
+import "./interfaces/ILOVE20Launch.sol";
 import "./interfaces/ILOVE20Stake.sol";
 import "./interfaces/ILOVE20SLToken.sol";
 import "./interfaces/ILOVE20Vote.sol";
@@ -69,53 +70,26 @@ struct VerificationInfo {
     string[] infos;
 }
 
-struct RewardInfo {
-    uint256 round;
-    uint256 reward;
-    bool isMinted;
+struct ActionVoter {
+    address account;
+    uint256 voteCount;
 }
 
-struct GovReward {
-    uint256 round;
-    uint256 reward;
-    uint256 verifyReward;
-    uint256 boostReward;
-    bool isMinted;
-}
-
-struct ActionReward {
+struct AccountVotingAction {
     uint256 actionId;
     uint256 round;
-    uint256 reward;
-    bool isMinted;
+    uint256 myVoteCount;
+    uint256 totalVoteCount;
 }
 
-struct TokenStats {
-    // Minting status
-    uint256 maxSupply; // token.maxSupply()
-    uint256 totalSupply; // token.totalSupply()
-    uint256 reservedAvailable; // mintContract.reservedAvailable()
-    uint256 rewardAvailable; // mintContract.rewardAvailable()
-    // Minted token allocation
-    uint256 pairReserveParentToken; // IUniswapV2Pair.getReserves()
-    uint256 pairReserveToken; // IUniswapV2Pair.getReserves()
-    uint256 totalLpSupply; // IUniswapV2Pair.getReserves()
-    uint256 stakedTokenAmountForSt; // token.balanceOf(stContract)
-    uint256 joinedTokenAmount; // token.balanceOf(joinContract)
-    // SL/ST status
-    uint256 totalSLSupply; // slContract.totalSupply()
-    uint256 totalSTSupply; // stContract.totalSupply()
-    uint256 parentTokenAmountForSl; // from slContract.tokenAmounts()
-    uint256 tokenAmountForSl; // from slContract.tokenAmounts()
-    // Launch status
-    uint256 parentPool; //token.parentPool()
-    // Governance status
-    uint256 finishedRounds; // voteContract.currentRound() - stakeContract.initialStakeRound() - 2
-    uint256 actionsCount; // submitContract.actionsCount()
-    uint256 joiningActionsCount; // joinContract.votedActionIdsCount()
+struct VerificationMatrix {
+    address[] verifiers;
+    address[] verifiees;
+    uint256[][] scores;
 }
 
 contract LOVE20RoundViewer {
+    address public launchAddress;
     address public stakeAddress;
     address public submitAddress;
     address public voteAddress;
@@ -128,6 +102,7 @@ contract LOVE20RoundViewer {
     constructor() {}
 
     function init(
+        address launchAddress_,
         address stakeAddress_,
         address submitAddress_,
         address voteAddress_,
@@ -137,6 +112,7 @@ contract LOVE20RoundViewer {
     ) external {
         require(!initialized, "Already initialized");
 
+        launchAddress = launchAddress_;
         stakeAddress = stakeAddress_;
         submitAddress = submitAddress_;
         voteAddress = voteAddress_;
@@ -633,322 +609,247 @@ contract LOVE20RoundViewer {
         return (actionInfo.body.verificationKeys, verificationInfos);
     }
 
-    //---------------- Reward/mint related functions ----------------
+    //---------------- New voting and verification query functions ----------------
 
-    function govRewardsByAccountByRounds(
+    function actionVoters(
         address tokenAddress,
-        address account,
-        uint256 startRound,
-        uint256 endRound
-    ) external view returns (GovReward[] memory rewards) {
-        require(
-            startRound <= endRound,
-            "startRound must be less than or equal to endRound"
-        );
+        uint256 round,
+        uint256 actionId
+    ) external view returns (ActionVoter[] memory voters) {
+        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
 
-        rewards = new GovReward[](endRound - startRound + 1);
-        for (uint256 i = startRound; i <= endRound; i++) {
-            (
-                uint256 verifyReward,
-                uint256 boostReward,
-                ,
-                bool isMinted
-            ) = ILOVE20Mint(mintAddress).govRewardByAccount(
-                    tokenAddress,
-                    i,
-                    account
-                );
-
-            rewards[i - startRound] = GovReward({
-                round: i,
-                reward: verifyReward + boostReward,
-                verifyReward: verifyReward,
-                boostReward: boostReward,
-                isMinted: isMinted
-            });
-        }
-    }
-
-    function actionRewardsByAccountByActionIdByRounds(
-        address tokenAddress,
-        address account,
-        uint256 actionId,
-        uint256 startRound,
-        uint256 endRound
-    ) public view returns (RewardInfo[] memory rewards) {
-        require(
-            startRound <= endRound,
-            "startRound must be less than or equal to endRound"
-        );
-
-        rewards = new RewardInfo[](endRound - startRound + 1);
-
-        for (uint256 i = startRound; i <= endRound; i++) {
-            uint256 reward = 0;
-            bool isMinted = false;
-
-            if (
-                ILOVE20Mint(mintAddress).isActionIdWithReward(
-                    tokenAddress,
-                    i,
-                    actionId
-                )
-            ) {
-                (reward, isMinted) = ILOVE20Mint(mintAddress)
-                    .actionRewardByActionIdByAccount(
-                        tokenAddress,
-                        i,
-                        actionId,
-                        account
-                    );
-            }
-
-            rewards[i - startRound] = RewardInfo({
-                round: i,
-                reward: reward,
-                isMinted: isMinted
-            });
-        }
-
-        return rewards;
-    }
-
-    function actionRewardsByAccountOfLastRounds(
-        address tokenAddress,
-        address account,
-        uint256 LastRounds
-    )
-        public
-        view
-        returns (ActionInfo[] memory actions, ActionReward[] memory rewards)
-    {
-        // Got joined action ids
-        uint256[] memory actionIds = ILOVE20Join(joinAddress)
-            .actionIdsByAccount(tokenAddress, account);
-
-        if (actionIds.length == 0) {
-            return (new ActionInfo[](0), new ActionReward[](0));
-        }
-
-        // Got current mint round
-        uint256 currentRound = ILOVE20Join(joinAddress).currentRound();
-        if (currentRound <= 2) {
-            return (new ActionInfo[](0), new ActionReward[](0));
-        } else {
-            currentRound = currentRound - 2;
-        }
-        uint256 startRound = LastRounds >= currentRound
-            ? 0
-            : currentRound - LastRounds;
-
-        // Got result
-        rewards = _collectActionRewards(
+        uint256 voterCount = voteContract.accountsByActionIdCount(
             tokenAddress,
-            account,
-            actionIds,
-            startRound,
-            currentRound
+            round,
+            actionId
         );
-        actions = actionInfosByIds(tokenAddress, actionIds);
 
-        return (actions, rewards);
+        voters = new ActionVoter[](voterCount);
+
+        for (uint256 i = 0; i < voterCount; i++) {
+            address account = voteContract.accountsByActionIdAtIndex(
+                tokenAddress,
+                round,
+                actionId,
+                i
+            );
+            uint256 voteCount = voteContract.votesNumByAccountByActionId(
+                tokenAddress,
+                round,
+                account,
+                actionId
+            );
+
+            voters[i] = ActionVoter({account: account, voteCount: voteCount});
+        }
+
+        return voters;
     }
 
-    function _collectActionRewards(
+    function accountVotingHistory(
         address tokenAddress,
         address account,
-        uint256[] memory actionIds,
         uint256 startRound,
         uint256 endRound
-    ) private view returns (ActionReward[] memory) {
-        uint256 maxRewards = (endRound - startRound + 1) * actionIds.length;
-        ActionReward[] memory temp = new ActionReward[](maxRewards);
-        uint256 count = 0;
+    )
+        external
+        view
+        returns (
+            AccountVotingAction[] memory accountActions,
+            ActionInfo[] memory actionInfos
+        )
+    {
+        require(startRound <= endRound, "Invalid round range");
 
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            count = _addActionRewards(
+        uint256 maxActions = (endRound - startRound + 1) * 20;
+        AccountVotingAction[] memory tempActions = new AccountVotingAction[](
+            maxActions
+        );
+        uint256[] memory uniqueActionIds = new uint256[](maxActions);
+        uint256 actionCount = 0;
+        uint256 uniqueCount = 0;
+
+        for (uint256 round = startRound; round <= endRound; round++) {
+            (actionCount, uniqueCount) = _collectAccountVotingActions(
                 tokenAddress,
                 account,
-                actionIds[i],
-                startRound,
-                endRound,
-                temp,
-                count
+                round,
+                tempActions,
+                uniqueActionIds,
+                actionCount,
+                uniqueCount
             );
         }
 
-        assembly {
-            mstore(temp, count)
+        // Resize arrays to actual counts
+        accountActions = new AccountVotingAction[](actionCount);
+        for (uint256 i = 0; i < actionCount; i++) {
+            accountActions[i] = tempActions[i];
         }
-        return temp;
+
+        // Get unique action details
+        uint256[] memory finalUniqueIds = new uint256[](uniqueCount);
+        for (uint256 i = 0; i < uniqueCount; i++) {
+            finalUniqueIds[i] = uniqueActionIds[i];
+        }
+        actionInfos = actionInfosByIds(tokenAddress, finalUniqueIds);
+
+        return (accountActions, actionInfos);
     }
 
-    function _addActionRewards(
+    function _collectAccountVotingActions(
         address tokenAddress,
         address account,
-        uint256 actionId,
-        uint256 startRound,
-        uint256 endRound,
-        ActionReward[] memory rewards,
-        uint256 startIndex
-    ) private view returns (uint256) {
-        uint256 currentIndex = startIndex;
+        uint256 round,
+        AccountVotingAction[] memory tempActions,
+        uint256[] memory uniqueActionIds,
+        uint256 actionStartIndex,
+        uint256 uniqueStartIndex
+    ) internal view returns (uint256 actionCount, uint256 uniqueCount) {
+        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
 
-        for (uint256 round = startRound; round <= endRound; round++) {
-            if (
-                ILOVE20Mint(mintAddress).isActionIdWithReward(
+        (uint256[] memory actionIds, uint256[] memory votes) = voteContract
+            .votesNumsByAccount(tokenAddress, round, account);
+
+        actionCount = actionStartIndex;
+        uniqueCount = uniqueStartIndex;
+
+        for (uint256 i = 0; i < actionIds.length; i++) {
+            if (votes[i] > 0) {
+                uint256 totalVotes = voteContract.votesNumByActionId(
                     tokenAddress,
                     round,
-                    actionId
-                )
-            ) {
-                (uint256 reward, bool isMinted) = ILOVE20Mint(mintAddress)
-                    .actionRewardByActionIdByAccount(
-                        tokenAddress,
-                        round,
-                        actionId,
-                        account
-                    );
+                    actionIds[i]
+                );
 
-                if (reward > 0) {
-                    rewards[currentIndex] = ActionReward({
-                        actionId: actionId,
-                        round: round,
-                        reward: reward,
-                        isMinted: isMinted
-                    });
-                    currentIndex++;
-                }
-            }
-        }
+                tempActions[actionCount] = AccountVotingAction({
+                    actionId: actionIds[i],
+                    round: round,
+                    myVoteCount: votes[i],
+                    totalVoteCount: totalVotes
+                });
+                actionCount++;
 
-        return currentIndex;
-    }
-
-    function hasUnmintedActionRewardOfLastRounds(
-        address token,
-        address account,
-        uint256 latestRounds
-    ) public view returns (bool) {
-        // Got joined action ids
-        uint256[] memory actionIds = ILOVE20Join(joinAddress)
-            .actionIdsByAccount(token, account);
-
-        if (actionIds.length == 0) {
-            return false;
-        }
-
-        // Got current mint round
-        uint256 currentRound = ILOVE20Join(joinAddress).currentRound();
-        if (currentRound <= 2) {
-            return false;
-        } else {
-            currentRound = currentRound - 2;
-        }
-
-        uint256 startRound = latestRounds >= currentRound
-            ? 0
-            : currentRound - latestRounds;
-
-        // Got result
-        for (uint256 i = 0; i < actionIds.length; i++) {
-            for (uint256 round = startRound; round <= currentRound; round++) {
-                if (
-                    ILOVE20Mint(mintAddress).isActionIdWithReward(
-                        token,
-                        round,
-                        actionIds[i]
-                    )
-                ) {
-                    (uint256 reward, bool isMinted) = ILOVE20Mint(mintAddress)
-                        .actionRewardByActionIdByAccount(
-                            token,
-                            round,
-                            actionIds[i],
-                            account
-                        );
-
-                    if (reward > 0 && !isMinted) {
-                        return true;
+                // Check if actionId is already in unique list
+                bool exists = false;
+                for (uint256 j = 0; j < uniqueCount; j++) {
+                    if (uniqueActionIds[j] == actionIds[i]) {
+                        exists = true;
+                        break;
                     }
                 }
-            }
-        }
 
-        return false;
-    }
-
-    function estimatedActionRewardOfCurrentRound(
-        address tokenAddress
-    ) external view returns (uint256) {
-        uint256 realRound = ILOVE20Join(joinAddress).currentRound();
-        uint256 leftReward = ILOVE20Mint(mintAddress).rewardAvailable(
-            tokenAddress
-        );
-
-        if (
-            realRound >
-            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress)
-        ) {
-            bool isPreRewardPrepared = ILOVE20Mint(mintAddress)
-                .isRewardPrepared(tokenAddress, realRound - 1);
-            if (!isPreRewardPrepared) {
-                leftReward =
-                    (leftReward *
-                        (1000 -
-                            ILOVE20Mint(mintAddress)
-                                .ROUND_REWARD_GOV_PER_THOUSAND() -
-                            ILOVE20Mint(mintAddress)
-                                .ROUND_REWARD_ACTION_PER_THOUSAND())) /
-                    1000;
-            }
-        }
-
-        return
-            (leftReward *
-                ILOVE20Mint(mintAddress).ROUND_REWARD_ACTION_PER_THOUSAND()) /
-            1000;
-    }
-
-    function estimatedGovRewardOfCurrentRound(
-        address tokenAddress
-    ) external view returns (uint256) {
-        uint256 realRound = ILOVE20Vote(voteAddress).currentRound();
-        uint256 relativeRound = realRound -
-            ILOVE20Stake(stakeAddress).initialStakeRound(tokenAddress);
-        uint256 leftReward = ILOVE20Mint(mintAddress).rewardAvailable(
-            tokenAddress
-        );
-
-        if (relativeRound > 0) {
-            leftReward =
-                (leftReward *
-                    (1000 -
-                        ILOVE20Mint(mintAddress)
-                            .ROUND_REWARD_GOV_PER_THOUSAND() -
-                        ILOVE20Mint(mintAddress)
-                            .ROUND_REWARD_ACTION_PER_THOUSAND())) /
-                1000;
-            if (relativeRound > 1) {
-                bool isPreRewardPrepared = ILOVE20Mint(mintAddress)
-                    .isRewardPrepared(tokenAddress, realRound - 2);
-                if (!isPreRewardPrepared) {
-                    leftReward =
-                        (leftReward *
-                            (1000 -
-                                ILOVE20Mint(mintAddress)
-                                    .ROUND_REWARD_GOV_PER_THOUSAND() -
-                                ILOVE20Mint(mintAddress)
-                                    .ROUND_REWARD_ACTION_PER_THOUSAND())) /
-                        1000;
+                if (!exists) {
+                    uniqueActionIds[uniqueCount] = actionIds[i];
+                    uniqueCount++;
                 }
             }
         }
 
+        return (actionCount, uniqueCount);
+    }
+
+    function actionVerificationMatrix(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (VerificationMatrix memory matrix) {
+        // 获取验证者列表
+        address[] memory verifiers = _getVerifiers(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        // 获取被验证者列表（包括零地址弃权票）
+        address[] memory verifiees = _getVerifiees(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        // 构建分数矩阵
+        uint256[][] memory scores = _buildScoreMatrix(
+            tokenAddress,
+            round,
+            actionId,
+            verifiers,
+            verifiees
+        );
+
         return
-            (leftReward *
-                ILOVE20Mint(mintAddress).ROUND_REWARD_GOV_PER_THOUSAND()) /
-            1000;
+            VerificationMatrix({
+                verifiers: verifiers,
+                verifiees: verifiees,
+                scores: scores
+            });
+    }
+
+    function _getVerifiers(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) internal view returns (address[] memory verifiers) {
+        ILOVE20Vote voteContract = ILOVE20Vote(voteAddress);
+        uint256 verifierCount = voteContract.accountsByActionIdCount(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        verifiers = new address[](verifierCount);
+        for (uint256 i = 0; i < verifierCount; i++) {
+            verifiers[i] = voteContract.accountsByActionIdAtIndex(
+                tokenAddress,
+                round,
+                actionId,
+                i
+            );
+        }
+    }
+
+    function _getVerifiees(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) internal view returns (address[] memory verifiees) {
+        ILOVE20Join joinContract = ILOVE20Join(joinAddress);
+        address[] memory originalVerifiees = joinContract.randomAccounts(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        verifiees = new address[](originalVerifiees.length + 1);
+        for (uint256 i = 0; i < originalVerifiees.length; i++) {
+            verifiees[i] = originalVerifiees[i];
+        }
+        verifiees[originalVerifiees.length] = address(0);
+    }
+
+    function _buildScoreMatrix(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId,
+        address[] memory verifiers,
+        address[] memory verifiees
+    ) internal view returns (uint256[][] memory scores) {
+        ILOVE20Verify verifyContract = ILOVE20Verify(verifyAddress);
+
+        scores = new uint256[][](verifiers.length);
+        for (uint256 i = 0; i < verifiers.length; i++) {
+            scores[i] = new uint256[](verifiees.length);
+            for (uint256 j = 0; j < verifiees.length; j++) {
+                scores[i][j] = verifyContract
+                    .scoreByVerifierByActionIdByAccount(
+                        tokenAddress,
+                        round,
+                        verifiers[i],
+                        actionId,
+                        verifiees[j]
+                    );
+            }
+        }
     }
 
     //---------------- Statistics related functions ----------------
@@ -982,71 +883,5 @@ contract LOVE20RoundViewer {
             rewardAvailable: rewardAvailable
         });
         return govData_;
-    }
-
-    //---------------- Token statistics related functions ----------------
-    function tokenStatistics(
-        address tokenAddress
-    ) external view returns (TokenStats memory) {
-        ILOVE20Token love20 = ILOVE20Token(tokenAddress);
-        ILOVE20SLToken sl = ILOVE20SLToken(love20.slAddress());
-
-        TokenStats memory stats;
-
-        // Basic token info
-        stats.maxSupply = love20.maxSupply();
-        stats.totalSupply = love20.totalSupply();
-        stats.reservedAvailable = ILOVE20Mint(mintAddress).reservedAvailable(
-            tokenAddress
-        );
-        stats.rewardAvailable = ILOVE20Mint(mintAddress).rewardAvailable(
-            tokenAddress
-        );
-
-        // Pair reserves
-        address pairAddress = sl.uniswapV2Pair();
-        if (pairAddress != address(0)) {
-            (
-                stats.pairReserveToken,
-                stats.pairReserveParentToken,
-                stats.totalLpSupply
-            ) = sl.uniswapV2PairReserves();
-        }
-
-        // Token balances
-        stats.stakedTokenAmountForSt = love20.balanceOf(love20.stAddress());
-        stats.joinedTokenAmount = love20.balanceOf(joinAddress);
-
-        // SL/ST totals
-        stats.totalSLSupply = sl.totalSupply();
-        stats.totalSTSupply = ILOVE20Token(love20.stAddress()).totalSupply();
-
-        // SL withdrawable amounts
-        if (stats.totalSLSupply > 0) {
-            (stats.tokenAmountForSl, stats.parentTokenAmountForSl, , ) = sl
-                .tokenAmounts();
-        }
-
-        // Launch info
-        stats.parentPool = love20.parentPool();
-
-        // Governance info
-        uint256 currentRound = ILOVE20Vote(voteAddress).currentRound();
-        uint256 initialRound = ILOVE20Stake(stakeAddress).initialStakeRound(
-            tokenAddress
-        );
-        if (currentRound > initialRound + 2) {
-            stats.finishedRounds = currentRound - initialRound - 2;
-        }
-
-        stats.actionsCount = ILOVE20Submit(submitAddress).actionsCount(
-            tokenAddress
-        );
-
-        uint256 joinRound = ILOVE20Join(joinAddress).currentRound();
-        stats.joiningActionsCount = ILOVE20Vote(voteAddress)
-            .votedActionIdsCount(tokenAddress, joinRound);
-
-        return stats;
     }
 }

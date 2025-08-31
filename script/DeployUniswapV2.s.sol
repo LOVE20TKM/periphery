@@ -24,10 +24,7 @@ contract DeployUniswapV2 is Script {
 
         // Paid: 0.001591183704402696 ETH (2414728 gas * 0.658949457 gwei)
         vm.broadcast();
-        uniswapV2Router02Address = deployCode(
-            "UniswapV2Router02.sol:UniswapV2Router02",
-            abi.encode(factory, WETH)
-        );
+        uniswapV2Router02Address = deployCode("UniswapV2Router02.sol:UniswapV2Router02", abi.encode(factory, WETH));
 
         console.log("uniswapV2Router02Address: ", uniswapV2Router02Address);
     }

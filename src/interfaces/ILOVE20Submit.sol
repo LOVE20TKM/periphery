@@ -32,6 +32,7 @@ struct ActionSubmitInfo {
     address submitter;
     uint256 actionId;
 }
+
 interface ILOVE20SubmitErrors {
     error AlreadyInitialized();
     error CannotSubmitAction();
@@ -44,6 +45,7 @@ interface ILOVE20SubmitErrors {
     error AlreadySubmitted();
     error OnlyOneSubmitPerRound();
 }
+
 interface ILOVE20SubmitEvents {
     // Events
     event ActionCreate(
@@ -55,10 +57,7 @@ interface ILOVE20SubmitEvents {
     );
 
     event ActionSubmit(
-        address indexed tokenAddress,
-        uint256 round,
-        address indexed submitter,
-        uint256 indexed actionId
+        address indexed tokenAddress, uint256 round, address indexed submitter, uint256 indexed actionId
     );
 }
 
@@ -68,72 +67,44 @@ interface ILOVE20Submit is ILOVE20SubmitErrors, ILOVE20SubmitEvents, IPhase {
     function SUBMIT_MIN_PER_THOUSAND() external view returns (uint256);
     function MAX_VERIFICATION_KEY_LENGTH() external view returns (uint256);
 
-    function canSubmit(
-        address tokenAddress,
-        address account
-    ) external view returns (bool);
+    function canSubmit(address tokenAddress, address account) external view returns (bool);
 
-    function submitNewAction(
-        address tokenAddress,
-        ActionBody calldata actionBody
-    ) external returns (uint256 actionId);
+    function submitNewAction(address tokenAddress, ActionBody calldata actionBody)
+        external
+        returns (uint256 actionId);
 
     function submit(address tokenAddress, uint256 actionId) external;
 
-    function isSubmitted(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external view returns (bool);
+    function isSubmitted(address tokenAddress, uint256 round, uint256 actionId) external view returns (bool);
 
-    function canJoin(
-        address tokenAddress,
-        uint256 actionId,
-        address account
-    ) external view returns (bool);
+    function canJoin(address tokenAddress, uint256 actionId, address account) external view returns (bool);
 
     function actionsCount(address tokenAddress) external view returns (uint256);
-    function actionsAtIndex(
-        address tokenAddress,
-        uint256 index
-    ) external view returns (ActionInfo memory);
+    function actionsAtIndex(address tokenAddress, uint256 index) external view returns (ActionInfo memory);
 
-    function actionInfo(
-        address tokenAddress,
-        uint256 actionId
-    ) external view returns (ActionInfo memory);
+    function actionInfo(address tokenAddress, uint256 actionId) external view returns (ActionInfo memory);
 
-    function actionSubmitsCount(
-        address tokenAddress,
-        uint256 round
-    ) external view returns (uint256);
+    function actionSubmitsCount(address tokenAddress, uint256 round) external view returns (uint256);
 
-    function actionSubmitsAtIndex(
-        address tokenAddress,
-        uint256 round,
-        uint256 index
-    ) external view returns (ActionSubmitInfo memory);
+    function actionSubmitsAtIndex(address tokenAddress, uint256 round, uint256 index)
+        external
+        view
+        returns (ActionSubmitInfo memory);
 
-    function submitInfo(
-        address tokenAddress,
-        uint256 round,
-        uint256 actionId
-    ) external view returns (ActionSubmitInfo memory);
+    function submitInfo(address tokenAddress, uint256 round, uint256 actionId)
+        external
+        view
+        returns (ActionSubmitInfo memory);
 
-    function submitInfoBySubmitter(
-        address tokenAddress,
-        uint256 round,
-        address submitter
-    ) external view returns (ActionSubmitInfo memory);
+    function submitInfoBySubmitter(address tokenAddress, uint256 round, address submitter)
+        external
+        view
+        returns (ActionSubmitInfo memory);
 
-    function authorActionIdsCount(
-        address tokenAddress,
-        address author
-    ) external view returns (uint256);
+    function authorActionIdsCount(address tokenAddress, address author) external view returns (uint256);
 
-    function authorActionIdsAtIndex(
-        address tokenAddress,
-        address author,
-        uint256 index
-    ) external view returns (uint256);
+    function authorActionIdsAtIndex(address tokenAddress, address author, uint256 index)
+        external
+        view
+        returns (uint256);
 }
