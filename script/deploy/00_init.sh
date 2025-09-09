@@ -17,16 +17,18 @@ source $network_dir/.account && \
 source $network_dir/network.params && \
 source $network_dir/DataViewer.params
 
-## used for thinkium801
+## Using keystore file method
 forge_script() {
   forge script "$@" \
     --rpc-url $RPC_URL \
-    --private-key $PRIVATE_KEY \
+    --account $KEYSTORE_ACCOUNT \
+    --sender $ACCOUNT_ADDRESS \
+    --password $KEYSTORE_PASSWORD \
     --gas-price 5000000000 \
     --gas-limit 50000000 \
     --broadcast \
-    --legacy
-    #$([ "$network" != "anvil" ] && [ "$network" != "thinkium801" ] && [ "$network" != "thinkium801_dev" ] && [ "$network" != "thinkium70001_dev" ]  && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
+    --legacy \
+    $([[ "$network" != "anvil" ]] && [[ "$network" != thinkium* ]] && echo "--verify --etherscan-api-key $ETHERSCAN_API_KEY")
 }
 echo "forge_script() loaded"
 

@@ -19,7 +19,7 @@ source "$base_dir/DataViewer.params"
 # ------ user defined variables ------ 
 tokenAddress=$firstTokenAddress # 1st token
 
-
+# ------ functions ------
 cast_send() {
     local address=$1
     local function_signature=$2
@@ -31,7 +31,8 @@ cast_send() {
         "$function_signature" \
         "${args[@]}" \
         --rpc-url "$RPC_URL" \
-        --private-key "$PRIVATE_KEY" \
+        --account "$KEYSTORE_ACCOUNT" \
+        --password "$KEYSTORE_PASSWORD" \
         --legacy
 }
 echo "cast_send() loaded"
@@ -47,7 +48,8 @@ cast_call() {
         "$function_signature" \
         "${args[@]}" \
         --rpc-url "$RPC_URL" \
-        --private-key "$PRIVATE_KEY"
+        --account "$KEYSTORE_ACCOUNT" \
+        --password "$KEYSTORE_PASSWORD"
 }
 echo "cast_call() loaded"
 
