@@ -1,6 +1,6 @@
 echo "-------------------- params check --------------------"
 
-# check DataViewer.params & address.params
+# address.params
 check_equal "tokenViewer: launchAddress" $launchAddress $(cast_call $tokenViewerAddress "launchAddress()(address)")
 check_equal "tokenViewer: stakeAddress" $stakeAddress $(cast_call $tokenViewerAddress "stakeAddress()(address)")
 check_equal "tokenViewer: submitAddress" $submitAddress $(cast_call $tokenViewerAddress "submitAddress()(address)")
@@ -16,3 +16,17 @@ check_equal "roundViewer: voteAddress" $voteAddress $(cast_call $roundViewerAddr
 check_equal "roundViewer: joinAddress" $joinAddress $(cast_call $roundViewerAddress "joinAddress()(address)")
 check_equal "roundViewer: verifyAddress" $verifyAddress $(cast_call $roundViewerAddress "verifyAddress()(address)")
 check_equal "roundViewer: mintAddress" $mintAddress $(cast_call $roundViewerAddress "mintAddress()(address)")
+
+check_equal "mintViewer: stakeAddress" $stakeAddress $(cast_call $mintViewerAddress "stakeAddress()(address)")
+check_equal "mintViewer: voteAddress" $voteAddress $(cast_call $mintViewerAddress "voteAddress()(address)")
+check_equal "mintViewer: joinAddress" $joinAddress $(cast_call $mintViewerAddress "joinAddress()(address)")
+check_equal "mintViewer: mintAddress" $mintAddress $(cast_call $mintViewerAddress "mintAddress()(address)")
+
+check_equal "Hub: rootParentTokenAddress" $rootParentTokenAddress $(cast_call $love20HubAddress "WETHAddress()(address)")
+check_equal "Hub: launchAddress" $launchAddress $(cast_call $love20HubAddress "launchAddress()(address)")
+check_equal "Hub: stakeAddress" $stakeAddress $(cast_call $love20HubAddress "stakeAddress()(address)")
+check_equal "Hub: submitAddress" $submitAddress $(cast_call $love20HubAddress "submitAddress()(address)")
+check_equal "Hub: voteAddress" $voteAddress $(cast_call $love20HubAddress "voteAddress()(address)")
+check_equal "Hub: joinAddress" $joinAddress $(cast_call $love20HubAddress "joinAddress()(address)")
+check_equal "Hub: verifyAddress" $verifyAddress $(cast_call $love20HubAddress "verifyAddress()(address)")
+check_equal "Hub: mintAddress" $mintAddress $(cast_call $love20HubAddress "mintAddress()(address)")
