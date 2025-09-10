@@ -15,7 +15,13 @@ network_dir="../network/$network"
 
 source $network_dir/.account && \
 source $network_dir/network.params && \
-source $network_dir/DataViewer.params
+source $network_dir/address.core.params
+
+# ------ Request keystore password ------
+echo -e "\nPlease enter keystore password (for $KEYSTORE_ACCOUNT):"
+read -s KEYSTORE_PASSWORD
+export KEYSTORE_PASSWORD
+echo "Password saved, will not be requested again in this session"
 
 ## Using keystore file method
 forge_script() {

@@ -1,1 +1,1 @@
-forge script ../GetInitCodeHash.s.sol:GetInitCodeHash --rpc-url $RPC_URL --private-key $PRIVATE_KEY
+forge script ../GetInitCodeHash.s.sol:GetInitCodeHash --rpc-url $RPC_URL --account $KEYSTORE_ACCOUNT --password $KEYSTORE_PASSWORD

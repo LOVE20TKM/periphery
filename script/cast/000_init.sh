@@ -14,10 +14,16 @@ base_dir="../network/$network"
 source "$base_dir/.account"
 source "$base_dir/address.params"
 source "$base_dir/network.params"
-source "$base_dir/DataViewer.params"
+source "$base_dir/address.core.params"
 
 # ------ user defined variables ------ 
 tokenAddress=$firstTokenAddress # 1st token
+
+# ------ Request keystore password ------
+echo -e "\nPlease enter keystore password (for $KEYSTORE_ACCOUNT):"
+read -s KEYSTORE_PASSWORD
+export KEYSTORE_PASSWORD
+echo "Password saved, will not be requested again in this session"
 
 # ------ functions ------
 cast_send() {
