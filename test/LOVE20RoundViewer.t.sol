@@ -201,4 +201,331 @@ contract LOVE20RoundViewerTest is Test {
             "Verifier 0x3 should score 50 for zero address"
         );
     }
+
+    function testActionVerificationMatrixPagedBasic() public view {
+        // Test basic paging functionality: get first 2 verifiers
+        VerificationMatrix memory matrix = viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            0, // verifierStart
+            2 // verifierEnd
+        );
+
+        // Verify returned verifier count is 2
+        assertEq(matrix.verifiers.length, 2, "Should have 2 verifiers");
+
+        // Verify returned verifiers are the first 2
+        assertEq(
+            matrix.verifiers[0],
+            address(0x1),
+            "First verifier should be 0x1"
+        );
+        assertEq(
+            matrix.verifiers[1],
+            address(0x2),
+            "Second verifier should be 0x2"
+        );
+
+        // Verify complete verifiees list (including zero address)
+        assertEq(
+            matrix.verifiees.length,
+            3,
+            "Should have 3 verifiees including zero address"
+        );
+
+        // Verify score matrix dimensions are correct
+        assertEq(
+            matrix.scores.length,
+            2,
+            "Score matrix should have 2 rows for 2 verifiers"
+        );
+        assertEq(
+            matrix.scores[0].length,
+            3,
+            "Each row should have 3 columns for 3 verifiees"
+        );
+    }
+
+    function testActionVerificationMatrixPagedFullRange() public view {
+        // Test getting full range: 0 to 3 (all verifiers)
+        VerificationMatrix memory matrix = viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            0, // verifierStart
+            3 // verifierEnd
+        );
+
+        // Verify all 3 verifiers are returned
+        assertEq(matrix.verifiers.length, 3, "Should have all 3 verifiers");
+
+        assertEq(
+            matrix.verifiers[0],
+            address(0x1),
+            "First verifier should be 0x1"
+        );
+        assertEq(
+            matrix.verifiers[1],
+            address(0x2),
+            "Second verifier should be 0x2"
+        );
+        assertEq(
+            matrix.verifiers[2],
+            address(0x3),
+            "Third verifier should be 0x3"
+        );
+
+        // Verify score matrix dimensions
+        assertEq(matrix.scores.length, 3, "Score matrix should have 3 rows");
+    }
+
+    function testActionVerificationMatrixPagedMiddleRange() public view {
+        // Test getting middle range: 2nd and 3rd verifiers
+        VerificationMatrix memory matrix = viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            1, // verifierStart
+            3 // verifierEnd
+        );
+
+        // Verify 2 verifiers are returned (indices 1 and 2)
+        assertEq(matrix.verifiers.length, 2, "Should have 2 verifiers");
+
+        assertEq(
+            matrix.verifiers[0],
+            address(0x2),
+            "First verifier should be 0x2"
+        );
+        assertEq(
+            matrix.verifiers[1],
+            address(0x3),
+            "Second verifier should be 0x3"
+        );
+
+        // Verify score matrix dimensions
+        assertEq(matrix.scores.length, 2, "Score matrix should have 2 rows");
+
+        // Verify specific scores
+        assertEq(
+            matrix.scores[0][0],
+            75,
+            "Verifier 0x2 should score 75 for 0xa"
+        );
+        assertEq(
+            matrix.scores[1][0],
+            95,
+            "Verifier 0x3 should score 95 for 0xa"
+        );
+    }
+
+    function testActionVerificationMatrixPagedSingleVerifier() public view {
+        // Test getting a single verifier
+        VerificationMatrix memory matrix = viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            1, // verifierStart
+            2 // verifierEnd
+        );
+
+        // Verify only 1 verifier is returned
+        assertEq(matrix.verifiers.length, 1, "Should have 1 verifier");
+
+        assertEq(matrix.verifiers[0], address(0x2), "Verifier should be 0x2");
+
+        // Verify score matrix dimensions
+        assertEq(matrix.scores.length, 1, "Score matrix should have 1 row");
+        assertEq(matrix.scores[0].length, 3, "Row should have 3 columns");
+
+        // Verify the verifier's scores
+        assertEq(
+            matrix.scores[0][0],
+            75,
+            "Verifier 0x2 should score 75 for 0xa"
+        );
+        assertEq(
+            matrix.scores[0][1],
+            80,
+            "Verifier 0x2 should score 80 for 0xb"
+        );
+        assertEq(
+            matrix.scores[0][2],
+            40,
+            "Verifier 0x2 should score 40 for zero address"
+        );
+    }
+
+    function testActionVerificationMatrixPagedAutoAdjustEndIndex() public view {
+        // Test auto-adjustment of end index when it exceeds actual length
+        VerificationMatrix memory matrix = viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            0, // verifierStart
+            100 // verifierEnd (exceeds actual length 3)
+        );
+
+        // Verify auto-adjustment to actual length
+        assertEq(
+            matrix.verifiers.length,
+            3,
+            "Should auto-adjust to all 3 verifiers"
+        );
+
+        // Verify all verifiers are returned
+        assertEq(
+            matrix.verifiers[0],
+            address(0x1),
+            "First verifier should be 0x1"
+        );
+        assertEq(
+            matrix.verifiers[1],
+            address(0x2),
+            "Second verifier should be 0x2"
+        );
+        assertEq(
+            matrix.verifiers[2],
+            address(0x3),
+            "Third verifier should be 0x3"
+        );
+    }
+
+    function testActionVerificationMatrixPagedStartIndexOutOfBounds() public {
+        // Test start index out of bounds
+        vm.expectRevert("Start index out of bounds");
+        viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            3, // verifierStart (equals length, out of bounds)
+            5 // verifierEnd
+        );
+    }
+
+    function testActionVerificationMatrixPagedInvalidRange() public {
+        // Test invalid range: start index >= end index
+        vm.expectRevert("Invalid range");
+        viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            2, // verifierStart
+            2 // verifierEnd (equals start index)
+        );
+    }
+
+    function testActionVerificationMatrixPagedInvalidRangeReversed() public {
+        // Test invalid range: start index > end index
+        vm.expectRevert("Invalid range");
+        viewer.actionVerificationMatrixPaged(
+            address(0x123), // tokenAddress
+            1, // round
+            1, // actionId
+            2, // verifierStart
+            1 // verifierEnd (less than start index)
+        );
+    }
+
+    function testActionVerificationMatrixPagedScoresCorrectness() public view {
+        // Test correctness of paged score matrix
+        VerificationMatrix memory pagedMatrix = viewer
+            .actionVerificationMatrixPaged(
+                address(0x123), // tokenAddress
+                1, // round
+                1, // actionId
+                0, // verifierStart
+                2 // verifierEnd
+            );
+
+        // Verify all scores for first verifier (0x1)
+        assertEq(
+            pagedMatrix.scores[0][0],
+            85,
+            "Paged: Verifier 0x1 should score 85 for 0xa"
+        );
+        assertEq(
+            pagedMatrix.scores[0][1],
+            90,
+            "Paged: Verifier 0x1 should score 90 for 0xb"
+        );
+        assertEq(
+            pagedMatrix.scores[0][2],
+            30,
+            "Paged: Verifier 0x1 should score 30 for zero address"
+        );
+
+        // Verify all scores for second verifier (0x2)
+        assertEq(
+            pagedMatrix.scores[1][0],
+            75,
+            "Paged: Verifier 0x2 should score 75 for 0xa"
+        );
+        assertEq(
+            pagedMatrix.scores[1][1],
+            80,
+            "Paged: Verifier 0x2 should score 80 for 0xb"
+        );
+        assertEq(
+            pagedMatrix.scores[1][2],
+            40,
+            "Paged: Verifier 0x2 should score 40 for zero address"
+        );
+    }
+
+    function testActionVerificationMatrixPagedConsistencyWithFullMatrix()
+        public
+        view
+    {
+        // Test consistency of paged results with full matrix
+        // Get full matrix
+        VerificationMatrix memory fullMatrix = viewer.actionVerificationMatrix(
+            address(0x123), // tokenAddress
+            1, // round
+            1 // actionId
+        );
+
+        // Get paged matrix (first 2 verifiers)
+        VerificationMatrix memory pagedMatrix = viewer
+            .actionVerificationMatrixPaged(
+                address(0x123), // tokenAddress
+                1, // round
+                1, // actionId
+                0, // verifierStart
+                2 // verifierEnd
+            );
+
+        // Verify verifiees list is consistent
+        assertEq(
+            pagedMatrix.verifiees.length,
+            fullMatrix.verifiees.length,
+            "Verifiees should be same"
+        );
+        for (uint256 i = 0; i < pagedMatrix.verifiees.length; i++) {
+            assertEq(
+                pagedMatrix.verifiees[i],
+                fullMatrix.verifiees[i],
+                "Each verifiee should match"
+            );
+        }
+
+        // Verify paged verifiers match corresponding verifiers in full matrix
+        for (uint256 i = 0; i < pagedMatrix.verifiers.length; i++) {
+            assertEq(
+                pagedMatrix.verifiers[i],
+                fullMatrix.verifiers[i],
+                "Paged verifiers should match full matrix"
+            );
+
+            // Verify scores match
+            for (uint256 j = 0; j < pagedMatrix.verifiees.length; j++) {
+                assertEq(
+                    pagedMatrix.scores[i][j],
+                    fullMatrix.scores[i][j],
+                    "Scores should match"
+                );
+            }
+        }
+    }
 }

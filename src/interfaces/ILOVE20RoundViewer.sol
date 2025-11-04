@@ -22,18 +22,36 @@ struct VerificationMatrix {
 }
 
 interface ILOVE20RoundViewer {
-    function actionVoters(address tokenAddress, uint256 round, uint256 actionId)
-        external
-        view
-        returns (ActionVoter[] memory voters);
+    function actionVoters(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (ActionVoter[] memory voters);
 
-    function accountVotingHistory(address tokenAddress, address account, uint256 startRound, uint256 endRound)
+    function accountVotingHistory(
+        address tokenAddress,
+        address account,
+        uint256 startRound,
+        uint256 endRound
+    )
         external
         view
-        returns (AccountVotingAction[] memory accountActions, ActionInfo[] memory uniqueActionInfos);
+        returns (
+            AccountVotingAction[] memory accountActions,
+            ActionInfo[] memory uniqueActionInfos
+        );
 
-    function actionVerificationMatrix(address tokenAddress, uint256 round, uint256 actionId)
-        external
-        view
-        returns (VerificationMatrix memory matrix);
+    function actionVerificationMatrix(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId
+    ) external view returns (VerificationMatrix memory matrix);
+
+    function actionVerificationMatrixPaged(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId,
+        uint256 verifierStart,
+        uint256 verifierEnd
+    ) external view returns (VerificationMatrix memory matrix);
 }

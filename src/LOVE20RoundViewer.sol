@@ -754,21 +754,21 @@ contract LOVE20RoundViewer {
         uint256 round,
         uint256 actionId
     ) external view returns (VerificationMatrix memory matrix) {
-        // 获取验证者列表
+        // Get verifiers list
         address[] memory verifiers = _getVerifiers(
             tokenAddress,
             round,
             actionId
         );
 
-        // 获取被验证者列表（包括零地址弃权票）
+        // Get verifiees list (including zero address for abstention votes)
         address[] memory verifiees = _getVerifiees(
             tokenAddress,
             round,
             actionId
         );
 
-        // 构建分数矩阵
+        // Build score matrix
         uint256[][] memory scores = _buildScoreMatrix(
             tokenAddress,
             round,
@@ -780,6 +780,64 @@ contract LOVE20RoundViewer {
         return
             VerificationMatrix({
                 verifiers: verifiers,
+                verifiees: verifiees,
+                scores: scores
+            });
+    }
+
+    function actionVerificationMatrixPaged(
+        address tokenAddress,
+        uint256 round,
+        uint256 actionId,
+        uint256 verifierStart,
+        uint256 verifierEnd
+    ) external view returns (VerificationMatrix memory matrix) {
+        // Get complete verifiers list
+        address[] memory allVerifiers = _getVerifiers(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        // Parameter validation and auto-adjustment
+        require(
+            verifierStart < allVerifiers.length,
+            "Start index out of bounds"
+        );
+
+        // Auto-adjust end index if it exceeds the actual length
+        if (verifierEnd > allVerifiers.length) {
+            verifierEnd = allVerifiers.length;
+        }
+
+        require(verifierStart < verifierEnd, "Invalid range");
+
+        // Get verifiees list (including zero address for abstention votes)
+        address[] memory verifiees = _getVerifiees(
+            tokenAddress,
+            round,
+            actionId
+        );
+
+        // Extract paged verifiers
+        uint256 pageSize = verifierEnd - verifierStart;
+        address[] memory pagedVerifiers = new address[](pageSize);
+        for (uint256 i = 0; i < pageSize; i++) {
+            pagedVerifiers[i] = allVerifiers[verifierStart + i];
+        }
+
+        // Build score matrix (only for paged verifiers)
+        uint256[][] memory scores = _buildScoreMatrix(
+            tokenAddress,
+            round,
+            actionId,
+            pagedVerifiers,
+            verifiees
+        );
+
+        return
+            VerificationMatrix({
+                verifiers: pagedVerifiers,
                 verifiees: verifiees,
                 scores: scores
             });

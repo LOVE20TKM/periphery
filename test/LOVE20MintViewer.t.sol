@@ -45,23 +45,30 @@ contract LOVE20MintViewerTest is Test {
         assertEq(viewer.mintAddress(), address(mockMint));
     }
 
-
     function testActionRewardsByAccountOfLastRounds_NoRewards() public view {
-        ActionReward[] memory rewards =
-            viewer.actionRewardsByAccountOfLastRounds(address(mockERC20), address(this), 2);
+        ActionReward[] memory rewards = viewer
+            .actionRewardsByAccountOfLastRounds(
+                address(mockERC20),
+                address(this),
+                2
+            );
 
         // no reward for address(this) in mocks
         assertEq(rewards.length, 0);
     }
 
-    function testActionRewardsByAccountOfLastRounds_WithRewards_Minted() public view {
+    function testActionRewardsByAccountOfLastRounds_WithRewards_Minted()
+        public
+        view
+    {
         // account 0x1 has reward 25 and isMinted = true in mocks, for all rounds
         // join round 5 -> mint round 3, LastRounds=1 -> check mint rounds [2, 3]
-        ActionReward[] memory rewards = viewer.actionRewardsByAccountOfLastRounds(
-            address(mockERC20),
-            address(0x1),
-            1 // check mint rounds [2, 3]
-        );
+        ActionReward[] memory rewards = viewer
+            .actionRewardsByAccountOfLastRounds(
+                address(mockERC20),
+                address(0x1),
+                1 // check mint rounds [2, 3]
+            );
 
         // rewards should contain entries for each rewarded round
         assertEq(rewards.length, 2);
@@ -87,7 +94,10 @@ contract LOVE20MintViewerTest is Test {
         assertFalse(hasUnminted);
     }
 
-    function testHasUnmintedActionRewardOfLastRounds_WithRewards_NotMinted() public view {
+    function testHasUnmintedActionRewardOfLastRounds_WithRewards_NotMinted()
+        public
+        view
+    {
         // 测试账户有奖励但未领取的情况
         bool hasUnminted = viewer.hasUnmintedActionRewardOfLastRounds(
             address(mockERC20),
@@ -97,15 +107,19 @@ contract LOVE20MintViewerTest is Test {
         assertTrue(hasUnminted);
     }
 
-    function testEstimatedRewards() public {
+    function testEstimatedRewards() public view {
         // These functions may revert due to underflow in mocks, which is expected
-        try viewer.estimatedActionRewardOfCurrentRound(address(mockERC20)) returns (uint256 actionReward) {
+        try
+            viewer.estimatedActionRewardOfCurrentRound(address(mockERC20))
+        returns (uint256 actionReward) {
             assertTrue(actionReward >= 0);
         } catch {
             // Underflow is expected in mock scenario
         }
 
-        try viewer.estimatedGovRewardOfCurrentRound(address(mockERC20)) returns (uint256 govReward) {
+        try
+            viewer.estimatedGovRewardOfCurrentRound(address(mockERC20))
+        returns (uint256 govReward) {
             assertTrue(govReward >= 0);
         } catch {
             // Underflow is expected in mock scenario
@@ -125,6 +139,9 @@ contract LOVE20MintViewerTest is Test {
         assertEq(rewards[1].round, 2);
         // Mock returns verify reward and boost reward
         // Check that the reward is the sum of verify and boost
-        assertEq(rewards[0].reward, rewards[0].verifyReward + rewards[0].boostReward);
+        assertEq(
+            rewards[0].reward,
+            rewards[0].verifyReward + rewards[0].boostReward
+        );
     }
 }
