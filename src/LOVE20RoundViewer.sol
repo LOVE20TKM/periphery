@@ -20,6 +20,7 @@ struct VotingAction {
 
 struct JoinableAction {
     ActionInfo action;
+    address submitter;
     uint256 votesNum;
     bool hasReward;
     uint256 joinedAmount;
@@ -265,8 +266,11 @@ contract LOVE20RoundViewer {
             actionInfos.length
         );
         for (uint256 i = 0; i < actionInfos.length; i++) {
+            ActionSubmitInfo memory _submitInfo = ILOVE20Submit(submitAddress)
+                .submitInfo(tokenAddress, round, actionIds[i]);
             joinableActionDetails[i] = JoinableAction({
                 action: actionInfos[i],
+                submitter: _submitInfo.submitter,
                 votesNum: votes[i],
                 hasReward: ILOVE20Mint(mintAddress).isActionIdWithReward(
                     tokenAddress,

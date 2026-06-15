@@ -6,6 +6,8 @@ import "forge-std/Test.sol";
 import "../src/LOVE20RoundViewer.sol";
 import "./mock/MockLOVE20Vote.sol";
 import "./mock/MockLOVE20Join.sol";
+import "./mock/MockLOVE20Submit.sol";
+import "./mock/MockLOVE20Mint.sol";
 import "./mock/MockLOVE20Verify.sol";
 
 contract LOVE20RoundViewerTest is Test {
@@ -45,6 +47,34 @@ contract LOVE20RoundViewerTest is Test {
             address(0x5), // joinAddress
             address(0x6), // verifyAddress
             address(0x7) // mintAddress
+        );
+    }
+
+    function testJoinableActionsIncludesSubmitter() public {
+        MockILOVE20Submit mockSubmit = new MockILOVE20Submit();
+        MockILOVE20Mint mockMint = new MockILOVE20Mint();
+        LOVE20RoundViewer viewerWithSubmitter = new LOVE20RoundViewer();
+        viewerWithSubmitter.init(
+            address(0x1),
+            address(0x2),
+            address(mockSubmit),
+            address(mockVote),
+            address(mockJoin),
+            address(mockVerify),
+            address(mockMint)
+        );
+
+        JoinableAction[] memory actions = viewerWithSubmitter.joinableActions(
+            address(0x123),
+            1,
+            address(0x456)
+        );
+
+        assertGt(actions.length, 0, "Should have joinable actions");
+        assertEq(
+            actions[0].submitter,
+            address(0x123),
+            "Submitter should come from submit info"
         );
     }
 
