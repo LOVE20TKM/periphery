@@ -128,18 +128,21 @@ write_address_params() {
             -v roundViewerAddress="$roundViewerAddress" \
             -v mintViewerAddress="$mintViewerAddress" \
             -v love20HubAddress="$love20HubAddress" \
-            -v uniswapV2Router02Address="$uniswapV2Router02Address" '
+            -v uniswapV2Router02Address="$uniswapV2Router02Address" \
+            -v uniswapV2ZapAddress="$uniswapV2ZapAddress" '
             BEGIN {
                 values["tokenViewerAddress"] = tokenViewerAddress
                 values["roundViewerAddress"] = roundViewerAddress
                 values["mintViewerAddress"] = mintViewerAddress
                 values["love20HubAddress"] = love20HubAddress
                 values["uniswapV2Router02Address"] = uniswapV2Router02Address
+                values["uniswapV2ZapAddress"] = uniswapV2ZapAddress
                 order[1] = "tokenViewerAddress"
                 order[2] = "roundViewerAddress"
                 order[3] = "mintViewerAddress"
                 order[4] = "love20HubAddress"
                 order[5] = "uniswapV2Router02Address"
+                order[6] = "uniswapV2ZapAddress"
             }
             {
                 key = $0
@@ -158,7 +161,7 @@ write_address_params() {
                 }
             }
             END {
-                for (i = 1; i <= 5; i++) {
+                for (i = 1; i <= 6; i++) {
                     key = order[i]
                     if (!(key in seen)) {
                         print key "=" values[key]
@@ -173,6 +176,7 @@ write_address_params() {
             printf 'mintViewerAddress=%s\n' "$mintViewerAddress"
             printf 'love20HubAddress=%s\n' "$love20HubAddress"
             printf 'uniswapV2Router02Address=%s\n' "$uniswapV2Router02Address"
+            printf 'uniswapV2ZapAddress=%s\n' "$uniswapV2ZapAddress"
         } > "$params_tmp"
     fi
 
@@ -194,7 +198,7 @@ if [ -z "$network" ] || [ ! -d "../network/$network" ]; then
     exit 1
 fi
 
-echo -e "\n[Step 1/6] Initializing environment..."
+echo -e "\n[Step 1/7] Initializing environment..."
 source 00_init.sh "$network"
 if [ $? -ne 0 ]; then
     echo -e "\033[31mError:\033[0m Failed to initialize environment"
@@ -216,32 +220,38 @@ echo -e "  One-Click Deploy Periphery"
 echo -e "  Network: $network"
 echo -e "========================================="
 
-echo -e "\n[Step 2/6] Deploying LOVE20TokenViewer..."
+echo -e "\n[Step 2/7] Deploying LOVE20TokenViewer..."
 deploy_and_record_address 01_deploy_tokenviewer.sh "TokenViewer deployed at" tokenViewerAddress "LOVE20TokenViewer"
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\n[Step 3/6] Deploying LOVE20RoundViewer..."
+echo -e "\n[Step 3/7] Deploying LOVE20RoundViewer..."
 deploy_and_record_address 02_deploy_roundviewer.sh "RoundViewer deployed at" roundViewerAddress "LOVE20RoundViewer"
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\n[Step 4/6] Deploying LOVE20MintViewer..."
+echo -e "\n[Step 4/7] Deploying LOVE20MintViewer..."
 deploy_and_record_address 03_deploy_mintviewer.sh "MintViewer deployed at" mintViewerAddress "LOVE20MintViewer"
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\n[Step 5/6] Deploying LOVE20Hub..."
+echo -e "\n[Step 5/7] Deploying LOVE20Hub..."
 deploy_and_record_address 04_deploy_hub.sh "Hub contract deployed, address:" love20HubAddress "LOVE20Hub"
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "\n[Step 6/6] Deploying UniswapV2Router02..."
+echo -e "\n[Step 6/7] Deploying UniswapV2Router02..."
 deploy_and_record_address 05_deploy_uniswapV2Router02.sh "uniswapV2Router02Address:" uniswapV2Router02Address "UniswapV2Router02"
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+echo -e "\n[Step 7/7] Deploying UniswapV2Zap..."
+deploy_and_record_address 06_deploy_uniswapV2Zap.sh "uniswapV2ZapAddress:" uniswapV2ZapAddress "UniswapV2Zap"
 if [ $? -ne 0 ]; then
     exit 1
 fi
@@ -260,5 +270,6 @@ echo -e "RoundViewer Address: $roundViewerAddress"
 echo -e "MintViewer Address: $mintViewerAddress"
 echo -e "Hub Address: $love20HubAddress"
 echo -e "UniswapV2Router02 Address: $uniswapV2Router02Address"
+echo -e "UniswapV2Zap Address: $uniswapV2ZapAddress"
 echo -e "Network: $network"
 echo -e "=========================================\n"
