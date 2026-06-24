@@ -58,6 +58,34 @@ contract TestERC20 {
 }
 
 interface IUniswapV2Zap {
+    struct ZapQuote {
+        bool hasLiquidity;
+        bool willSwap;
+        address swapTokenIn;
+        address swapTokenOut;
+        uint256 amountToSwap;
+        uint256 amountOutFromSwap;
+        uint256 amountAUsed;
+        uint256 amountBUsed;
+        uint256 liquidity;
+        uint256 reserveAAfter;
+        uint256 reserveBAfter;
+    }
+
+    struct ZapNativeQuote {
+        bool hasLiquidity;
+        bool willSwap;
+        address swapTokenIn;
+        address swapTokenOut;
+        uint256 amountToSwap;
+        uint256 amountOutFromSwap;
+        uint256 amountTokenUsed;
+        uint256 amountNativeUsed;
+        uint256 liquidity;
+        uint256 reserveTokenAfter;
+        uint256 reserveNativeAfter;
+    }
+
     struct ZapTokenParams {
         address tokenA;
         address tokenB;
@@ -73,6 +101,16 @@ interface IUniswapV2Zap {
     function zapToken(ZapTokenParams calldata params)
         external
         returns (uint256 amountA, uint256 amountB, uint256 liquidity);
+
+    function quoteZapToken(address tokenA, address tokenB, uint256 amountAIn, uint256 amountBIn)
+        external
+        view
+        returns (ZapQuote memory quote);
+
+    function quoteZapNativeToken(address token, uint256 amountTokenIn, uint256 amountNativeIn)
+        external
+        view
+        returns (ZapNativeQuote memory quote);
 
     function zapNativeToken(
         address token,
@@ -106,6 +144,7 @@ contract UniswapV2ZapTest is Test {
 
     error InsufficientLiquidityMinted();
     error PairMissingOrEmpty();
+    error AmountTooLarge();
 
     IUniswapV2Factory public factory;
     IUniswapV2Router02 public router;
@@ -222,6 +261,210 @@ contract UniswapV2ZapTest is Test {
         assertGt(liquidity, 0, "liquidity");
         assertGt(_pair(tokenA, tokenB).balanceOf(recipient), liquidityBefore, "recipient LP");
         _assertNoZapTokenDust(tokenA, tokenB);
+    }
+
+    function testQuoteZapTokenMatchesZapResult() public {
+        IUniswapV2Zap.ZapQuote memory quote = _assertQuoteMatchesZapResult(100 ether, 0);
+
+        assertTrue(quote.hasLiquidity, "has liquidity");
+        assertTrue(quote.willSwap, "will swap");
+        assertEq(quote.swapTokenIn, address(tokenA), "swap token in");
+        assertEq(quote.swapTokenOut, address(tokenB), "swap token out");
+        assertGt(quote.amountToSwap, 0, "amount to swap");
+        assertGt(quote.amountOutFromSwap, 0, "amount out from swap");
+    }
+
+    function testQuoteZapTokenMatchesZapResultWhenSwappingTokenB() public {
+        IUniswapV2Zap.ZapQuote memory quote = _assertQuoteMatchesZapResult(0, 100 ether);
+
+        assertTrue(quote.hasLiquidity, "has liquidity");
+        assertTrue(quote.willSwap, "will swap");
+        assertEq(quote.swapTokenIn, address(tokenB), "swap token in");
+        assertEq(quote.swapTokenOut, address(tokenA), "swap token out");
+        assertGt(quote.amountToSwap, 0, "amount to swap");
+        assertGt(quote.amountOutFromSwap, 0, "amount out from swap");
+    }
+
+    function testQuoteZapTokenUsesAllInputsWhenAlreadyBalanced() public {
+        IUniswapV2Zap.ZapQuote memory quote = _assertQuoteMatchesZapResult(10 ether, 10 ether);
+
+        assertTrue(quote.hasLiquidity, "has liquidity");
+        assertFalse(quote.willSwap, "will swap");
+        assertEq(quote.amountToSwap, 0, "amount to swap");
+        assertEq(quote.amountOutFromSwap, 0, "amount out from swap");
+        assertEq(quote.amountAUsed, 10 ether, "amount A used");
+        assertEq(quote.amountBUsed, 10 ether, "amount B used");
+    }
+
+    function testQuoteZapTokenNewPairMinimumMintableLiquidity() public {
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenC), address(tokenD), 1001, 1001);
+
+        assertFalse(quote.hasLiquidity, "has liquidity");
+        assertFalse(quote.willSwap, "will swap");
+        assertEq(quote.amountAUsed, 1001, "amount A used");
+        assertEq(quote.amountBUsed, 1001, "amount B used");
+        assertEq(quote.liquidity, 1, "liquidity");
+        assertEq(quote.reserveAAfter, 1001, "reserve A after");
+        assertEq(quote.reserveBAfter, 1001, "reserve B after");
+
+        tokenC.mint(user, 1001);
+        tokenD.mint(user, 1001);
+        vm.startPrank(user);
+        tokenC.approve(address(zap), 1001);
+        tokenD.approve(address(zap), 1001);
+        (uint256 amountA, uint256 amountB, uint256 liquidity) = zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenC),
+                tokenB: address(tokenD),
+                amountAIn: 1001,
+                amountBIn: 1001,
+                amountAMin: 1,
+                amountBMin: 1,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+        vm.stopPrank();
+
+        assertEq(amountA, quote.amountAUsed, "amount A used after zap");
+        assertEq(amountB, quote.amountBUsed, "amount B used after zap");
+        assertEq(liquidity, 1, "minimum LP minted");
+    }
+
+    function testQuoteZapTokenUsesCallerTokenOrder() public view {
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenB), address(tokenA), 100 ether, 0);
+
+        assertTrue(quote.hasLiquidity, "has liquidity");
+        assertTrue(quote.willSwap, "will swap");
+        assertEq(quote.swapTokenIn, address(tokenB), "swap token in");
+        assertEq(quote.swapTokenOut, address(tokenA), "swap token out");
+        assertGt(quote.reserveAAfter, 0, "reserve A after");
+        assertGt(quote.reserveBAfter, 0, "reserve B after");
+    }
+
+    function testQuoteZapNativeTokenUsesWrappedNativeAsTokenA() public view {
+        IUniswapV2Zap.ZapNativeQuote memory quote = zap.quoteZapNativeToken(address(tokenA), 0, 10 ether);
+
+        assertTrue(quote.hasLiquidity, "has liquidity");
+        assertTrue(quote.willSwap, "will swap");
+        assertEq(quote.swapTokenIn, weth, "swap token in");
+        assertEq(quote.swapTokenOut, address(tokenA), "swap token out");
+        assertGt(quote.amountNativeUsed, 0, "native used");
+        assertGt(quote.amountTokenUsed, 0, "token used");
+    }
+
+    function testQuoteZapNativeTokenLiquidityMatchesZapResult() public {
+        IUniswapV2Zap.ZapNativeQuote memory quote = zap.quoteZapNativeToken(address(tokenA), 0, 10 ether);
+
+        vm.prank(user);
+        (uint256 amountToken, uint256 amountNative, uint256 liquidity) =
+            zap.zapNativeToken{value: 10 ether}(address(tokenA), 0, 1, 1, 1, recipient, block.timestamp + 1);
+
+        assertEq(amountToken, quote.amountTokenUsed, "token used");
+        assertEq(amountNative, quote.amountNativeUsed, "native used");
+        assertEq(liquidity, quote.liquidity, "liquidity");
+    }
+
+    function testQuoteZapTokenLiquidityMatchesZapResultWhenFeeOn() public {
+        factory.setFeeTo(address(0xfee));
+        _mintAndApprove(10 ether, 10 ether);
+
+        vm.prank(user);
+        zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 10 ether,
+                amountBIn: 10 ether,
+                amountAMin: 1,
+                amountBMin: 1,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+
+        address pair = factory.getPair(address(tokenA), address(tokenB));
+        tokenA.mint(pair, 100 ether);
+        IUniswapV2Pair(pair).sync();
+
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenA), address(tokenB), 10 ether, 0);
+        _mintAndApprove(10 ether, 0);
+
+        vm.prank(user);
+        (,, uint256 liquidity) = zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 10 ether,
+                amountBIn: 0,
+                amountAMin: 1,
+                amountBMin: 1,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+
+        assertEq(liquidity, quote.liquidity, "liquidity");
+    }
+
+    function testQuoteZapTokenSingleSidedSmallPoolUsesFormulaPrecision() public {
+        uint256 reserveA = 2_857_911_946_302;
+        uint256 reserveB = 2_330_969_554_244_432_846;
+        uint256 amountBIn = 6_992_700_000_000_000_000;
+
+        tokenC.mint(address(this), reserveA);
+        tokenD.mint(address(this), reserveB);
+        tokenC.approve(address(router), reserveA);
+        tokenD.approve(address(router), reserveB);
+        router.addLiquidity(
+            address(tokenC), address(tokenD), reserveA, reserveB, 1, 1, address(this), block.timestamp + 1
+        );
+
+        IUniswapV2Pair pair = _pair(tokenC, tokenD);
+        uint256 expectedSwap = _formulaSwapAmount(reserveB, reserveA, amountBIn, 0);
+        uint256 expectedAmountOut = router.getAmountOut(expectedSwap, reserveB, reserveA);
+        uint256 expectedLiquidity = (expectedAmountOut * pair.totalSupply()) / (reserveA - expectedAmountOut);
+
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenC), address(tokenD), 0, amountBIn);
+
+        assertEq(quote.amountToSwap, expectedSwap, "amount to swap");
+        assertEq(quote.amountOutFromSwap, expectedAmountOut, "amount out");
+        assertEq(quote.liquidity, expectedLiquidity, "liquidity");
+    }
+
+    function testQuoteZapTokenUnbalancedPairUsesFormulaPrecision() public view {
+        uint256 amountAIn = 200 ether;
+        uint256 amountBIn = 10 ether;
+        uint256 expectedSwap = _formulaSwapAmount(1000 ether, 1000 ether, amountAIn, amountBIn);
+        uint256 expectedAmountOut = router.getAmountOut(expectedSwap, 1000 ether, 1000 ether);
+
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenA), address(tokenB), amountAIn, amountBIn);
+
+        assertEq(quote.amountToSwap, expectedSwap, "amount to swap");
+        assertEq(quote.amountOutFromSwap, expectedAmountOut, "amount out");
+    }
+
+    function testQuoteZapTokenRevertsWhenInputCannotMintLiquidity() public {
+        address pair = factory.getPair(address(tokenA), address(tokenB));
+        tokenA.mint(pair, 1000 ether);
+        tokenB.mint(pair, 1000 ether);
+        IUniswapV2Pair(pair).sync();
+
+        vm.expectRevert(InsufficientLiquidityMinted.selector);
+        zap.quoteZapToken(address(tokenA), address(tokenB), 1, 1);
+    }
+
+    function testQuoteZapTokenRevertsWhenNewPairInputCannotMintLiquidity() public {
+        vm.expectRevert(InsufficientLiquidityMinted.selector);
+        zap.quoteZapToken(address(tokenC), address(tokenD), 1, 1);
+    }
+
+    function testQuoteZapTokenRevertsWhenAmountTooLarge() public {
+        vm.expectRevert(AmountTooLarge.selector);
+        zap.quoteZapToken(address(tokenA), address(tokenB), uint256(type(uint112).max) + 1, 0);
     }
 
     function testZapTokenDoesNotRefundExistingBalances() public {
@@ -351,6 +594,59 @@ contract UniswapV2ZapTest is Test {
         );
     }
 
+    function testAmountAMinReverts() public {
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenA), address(tokenB), 100 ether, 0);
+        _mintAndApprove(100 ether, 0);
+
+        vm.expectRevert(bytes("UniswapV2Router: INSUFFICIENT_A_AMOUNT"));
+        vm.prank(user);
+        zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 100 ether,
+                amountBIn: 0,
+                amountAMin: quote.amountAUsed + 1,
+                amountBMin: 1,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+    }
+
+    function testAmountBMinReverts() public {
+        _mintAndApprove(10 ether, 10 ether);
+
+        vm.expectRevert(bytes("UniswapV2Router: INSUFFICIENT_B_AMOUNT"));
+        vm.prank(user);
+        zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 10 ether,
+                amountBIn: 10 ether,
+                amountAMin: 1,
+                amountBMin: type(uint256).max,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+    }
+
+    function testNativeAmountMinReverts() public {
+        tokenA.mint(user, 100 ether);
+        vm.prank(user);
+        tokenA.approve(address(zap), 100 ether);
+
+        vm.expectRevert(bytes("UniswapV2Router: INSUFFICIENT_B_AMOUNT"));
+        vm.prank(user);
+        zap.zapNativeToken{value: 10 ether}(
+            address(tokenA), 100 ether, type(uint256).max, 1, 1, recipient, block.timestamp + 1
+        );
+    }
+
     function testPairNotFoundSingleTokenReverts() public {
         tokenC.mint(user, 100 ether);
         vm.prank(user);
@@ -445,6 +741,67 @@ contract UniswapV2ZapTest is Test {
         return IUniswapV2Pair(factory.getPair(address(token0), address(token1)));
     }
 
+    function _pairReserves(TestERC20 token0, TestERC20 token1)
+        internal
+        view
+        returns (uint256 reserve0, uint256 reserve1)
+    {
+        IUniswapV2Pair pair = _pair(token0, token1);
+        (uint112 reserveA, uint112 reserveB,) = pair.getReserves();
+        (reserve0, reserve1) = address(token0) == pair.token0()
+            ? (uint256(reserveA), uint256(reserveB))
+            : (uint256(reserveB), uint256(reserveA));
+    }
+
+    function _assertQuoteMatchesZapResult(uint256 amountAIn, uint256 amountBIn)
+        internal
+        returns (IUniswapV2Zap.ZapQuote memory quote)
+    {
+        (uint256 reserveABefore, uint256 reserveBBefore) = _pairReserves(tokenA, tokenB);
+        quote = zap.quoteZapToken(address(tokenA), address(tokenB), amountAIn, amountBIn);
+
+        if (quote.willSwap) {
+            if (quote.swapTokenIn == address(tokenA)) {
+                assertEq(
+                    quote.amountOutFromSwap,
+                    router.getAmountOut(quote.amountToSwap, reserveABefore, reserveBBefore),
+                    "router amount out"
+                );
+            } else {
+                assertEq(
+                    quote.amountOutFromSwap,
+                    router.getAmountOut(quote.amountToSwap, reserveBBefore, reserveABefore),
+                    "router amount out"
+                );
+            }
+        }
+
+        _mintAndApprove(amountAIn, amountBIn);
+
+        vm.prank(user);
+        (uint256 amountA, uint256 amountB, uint256 liquidity) = zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: amountAIn,
+                amountBIn: amountBIn,
+                amountAMin: 1,
+                amountBMin: 1,
+                liquidityMin: 1,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+
+        (uint256 reserveA, uint256 reserveB) = _pairReserves(tokenA, tokenB);
+        assertEq(amountA, quote.amountAUsed, "amount A used");
+        assertEq(amountB, quote.amountBUsed, "amount B used");
+        assertEq(liquidity, quote.liquidity, "liquidity");
+        assertEq(reserveA, quote.reserveAAfter, "reserve A after");
+        assertEq(reserveB, quote.reserveBAfter, "reserve B after");
+        _assertNoZapTokenDust(tokenA, tokenB);
+    }
+
     function _assertNoZapTokenDust(TestERC20 token0, TestERC20 token1) internal view {
         assertEq(token0.balanceOf(address(zap)), 0, "zap token0 dust");
         assertEq(token1.balanceOf(address(zap)), 0, "zap token1 dust");
@@ -453,6 +810,29 @@ contract UniswapV2ZapTest is Test {
     function _assertNoSelector(string memory signature) internal {
         (bool ok,) = address(zap).call(abi.encodeWithSignature(signature));
         assertFalse(ok, signature);
+    }
+
+    function _formulaSwapAmount(uint256 reserveIn, uint256 reserveOut, uint256 amountIn, uint256 amountOutAlready)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 imbalance = amountIn * reserveOut - reserveIn * amountOutAlready;
+        uint256 denominator = reserveOut + amountOutAlready;
+        return (
+            sqrt(reserveIn * reserveIn * 3_988_009 + (reserveIn * imbalance * 3_988_000) / denominator)
+                - reserveIn * 1_997
+        ) / 1_994;
+    }
+
+    function sqrt(uint256 x) internal pure returns (uint256 y) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
     }
 }
 

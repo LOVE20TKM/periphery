@@ -4,6 +4,7 @@ pragma solidity =0.8.17;
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import {Math} from "../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {IUniswapV2Factory} from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Pair} from "../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import {IUniswapV2Router02} from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -15,6 +16,9 @@ interface IWrappedNative {
 
 contract UniswapV2Zap is ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    uint256 private constant UNISWAP_V2_MINIMUM_LIQUIDITY = 1000;
+    uint256 private constant UNISWAP_V2_MAX_RESERVE = type(uint112).max;
 
     event ZapToken(
         address indexed account,
@@ -49,6 +53,7 @@ contract UniswapV2Zap is ReentrancyGuard {
     error InsufficientLiquidity();
     error InvalidRatio();
     error InsufficientLiquidityMinted();
+    error AmountTooLarge();
     error NativeTransferFailed();
 
     struct ZapTokenParams {
@@ -61,6 +66,34 @@ contract UniswapV2Zap is ReentrancyGuard {
         uint256 liquidityMin;
         address to;
         uint256 deadline;
+    }
+
+    struct ZapQuote {
+        bool hasLiquidity;
+        bool willSwap;
+        address swapTokenIn;
+        address swapTokenOut;
+        uint256 amountToSwap;
+        uint256 amountOutFromSwap;
+        uint256 amountAUsed;
+        uint256 amountBUsed;
+        uint256 liquidity;
+        uint256 reserveAAfter;
+        uint256 reserveBAfter;
+    }
+
+    struct ZapNativeQuote {
+        bool hasLiquidity;
+        bool willSwap;
+        address swapTokenIn;
+        address swapTokenOut;
+        uint256 amountToSwap;
+        uint256 amountOutFromSwap;
+        uint256 amountTokenUsed;
+        uint256 amountNativeUsed;
+        uint256 liquidity;
+        uint256 reserveTokenAfter;
+        uint256 reserveNativeAfter;
     }
 
     IUniswapV2Router02 public immutable router;
@@ -101,19 +134,8 @@ contract UniswapV2Zap is ReentrancyGuard {
             IERC20(params.tokenB).safeTransferFrom(msg.sender, address(this), params.amountBIn);
         }
 
-        (amountA, amountB, liquidity) = _zapPair(
-            ZapTokenParams({
-                tokenA: params.tokenA,
-                tokenB: params.tokenB,
-                amountAIn: params.amountAIn,
-                amountBIn: params.amountBIn,
-                amountAMin: params.amountAMin,
-                amountBMin: params.amountBMin,
-                liquidityMin: params.liquidityMin,
-                to: params.to,
-                deadline: params.deadline
-            })
-        );
+        ZapTokenParams memory zapParams = params;
+        (amountA, amountB, liquidity) = _zapPair(zapParams);
 
         _refundTokenExcess(params.tokenA, msg.sender, balanceABefore);
         _refundTokenExcess(params.tokenB, msg.sender, balanceBBefore);
@@ -145,19 +167,8 @@ contract UniswapV2Zap is ReentrancyGuard {
             IWrappedNative(wrappedNativeToken).deposit{value: msg.value}();
         }
 
-        (amountNative, amountToken, liquidity) = _zapPair(
-            ZapTokenParams({
-                tokenA: wrappedNativeToken,
-                tokenB: token,
-                amountAIn: msg.value,
-                amountBIn: amountTokenIn,
-                amountAMin: amountNativeMin,
-                amountBMin: amountTokenMin,
-                liquidityMin: liquidityMin,
-                to: to,
-                deadline: deadline
-            })
-        );
+        (amountToken, amountNative, liquidity) =
+            _zapNativePair(token, amountTokenIn, msg.value, amountTokenMin, amountNativeMin, liquidityMin, to, deadline);
 
         _refundTokenExcess(token, msg.sender, tokenBalanceBefore);
         _refundWrappedNativeExcessAsNative(msg.sender, wrappedNativeBalanceBefore);
@@ -165,11 +176,32 @@ contract UniswapV2Zap is ReentrancyGuard {
         emit ZapNativeToken(msg.sender, token, to, amountToken, amountNative, liquidity);
     }
 
+    function quoteZapToken(address tokenA, address tokenB, uint256 amountAIn, uint256 amountBIn)
+        external
+        view
+        returns (ZapQuote memory quote)
+    {
+        _validatePair(tokenA, tokenB);
+        if (amountAIn == 0 && amountBIn == 0) revert ZeroAmount();
+        return _quoteZapPair(tokenA, tokenB, amountAIn, amountBIn);
+    }
+
+    function quoteZapNativeToken(address token, uint256 amountTokenIn, uint256 amountNativeIn)
+        external
+        view
+        returns (ZapNativeQuote memory quote)
+    {
+        if (token == address(0)) revert ZeroToken();
+        if (token == wrappedNativeToken) revert WrappedNativeToken();
+        if (amountTokenIn == 0 && amountNativeIn == 0) revert ZeroAmount();
+        return _quoteZapNativePair(token, amountTokenIn, amountNativeIn);
+    }
+
     function _zapPair(ZapTokenParams memory params)
         internal
         returns (uint256 amountA, uint256 amountB, uint256 liquidity)
     {
-        (uint256 reserveA, uint256 reserveB, bool hasLiquidity) = _reserves(params.tokenA, params.tokenB);
+        (uint256 reserveA, uint256 reserveB, bool hasLiquidity,) = _reserves(params.tokenA, params.tokenB);
 
         if (!hasLiquidity) {
             if (params.amountAIn == 0 || params.amountBIn == 0) revert PairMissingOrEmpty();
@@ -201,6 +233,118 @@ contract UniswapV2Zap is ReentrancyGuard {
 
         _approveToken(params.tokenA, 0);
         _approveToken(params.tokenB, 0);
+    }
+
+    function _zapNativePair(
+        address token,
+        uint256 amountTokenIn,
+        uint256 amountNativeIn,
+        uint256 amountTokenMin,
+        uint256 amountNativeMin,
+        uint256 liquidityMin,
+        address to,
+        uint256 deadline
+    ) internal returns (uint256 amountToken, uint256 amountNative, uint256 liquidity) {
+        (amountNative, amountToken, liquidity) = _zapPair(
+            ZapTokenParams({
+                tokenA: wrappedNativeToken,
+                tokenB: token,
+                amountAIn: amountNativeIn,
+                amountBIn: amountTokenIn,
+                amountAMin: amountNativeMin,
+                amountBMin: amountTokenMin,
+                liquidityMin: liquidityMin,
+                to: to,
+                deadline: deadline
+            })
+        );
+    }
+
+    function _quoteZapPair(address tokenA, address tokenB, uint256 amountAIn, uint256 amountBIn)
+        internal
+        view
+        returns (ZapQuote memory quote)
+    {
+        (uint256 reserveA, uint256 reserveB, bool hasLiquidity, address pairAddress) = _reserves(tokenA, tokenB);
+        if (amountAIn > UNISWAP_V2_MAX_RESERVE || amountBIn > UNISWAP_V2_MAX_RESERVE) revert AmountTooLarge();
+        quote.hasLiquidity = hasLiquidity;
+
+        if (!hasLiquidity) {
+            if (amountAIn == 0 || amountBIn == 0) revert PairMissingOrEmpty();
+            if (amountAIn * amountBIn < (UNISWAP_V2_MINIMUM_LIQUIDITY + 1) * (UNISWAP_V2_MINIMUM_LIQUIDITY + 1)) {
+                revert InsufficientLiquidityMinted();
+            }
+            quote.amountAUsed = amountAIn;
+            quote.amountBUsed = amountBIn;
+            quote.liquidity = Math.sqrt(amountAIn * amountBIn) - UNISWAP_V2_MINIMUM_LIQUIDITY;
+            quote.reserveAAfter = amountAIn;
+            quote.reserveBAfter = amountBIn;
+            return quote;
+        }
+
+        uint256 amountAAfterSwap = amountAIn;
+        uint256 amountBAfterSwap = amountBIn;
+        uint256 reserveAAfterSwap = reserveA;
+        uint256 reserveBAfterSwap = reserveB;
+
+        if (amountAIn * reserveB >= reserveA * amountBIn) {
+            quote.amountToSwap = _calcAmountToSwap(reserveA, reserveB, amountAIn, amountBIn);
+            if (quote.amountToSwap > 0) {
+                quote.willSwap = true;
+                quote.swapTokenIn = tokenA;
+                quote.swapTokenOut = tokenB;
+                quote.amountOutFromSwap = _getAmountOut(quote.amountToSwap, reserveA, reserveB);
+                if (quote.amountOutFromSwap == 0) revert InsufficientLiquidityMinted();
+                amountAAfterSwap = amountAIn - quote.amountToSwap;
+                amountBAfterSwap = amountBIn + quote.amountOutFromSwap;
+                reserveAAfterSwap = reserveA + quote.amountToSwap;
+                reserveBAfterSwap = reserveB - quote.amountOutFromSwap;
+            }
+        } else {
+            quote.amountToSwap = _calcAmountToSwap(reserveB, reserveA, amountBIn, amountAIn);
+            if (quote.amountToSwap > 0) {
+                quote.willSwap = true;
+                quote.swapTokenIn = tokenB;
+                quote.swapTokenOut = tokenA;
+                quote.amountOutFromSwap = _getAmountOut(quote.amountToSwap, reserveB, reserveA);
+                if (quote.amountOutFromSwap == 0) revert InsufficientLiquidityMinted();
+                amountBAfterSwap = amountBIn - quote.amountToSwap;
+                amountAAfterSwap = amountAIn + quote.amountOutFromSwap;
+                reserveBAfterSwap = reserveB + quote.amountToSwap;
+                reserveAAfterSwap = reserveA - quote.amountOutFromSwap;
+            }
+        }
+
+        (quote.amountAUsed, quote.amountBUsed) =
+            _quoteLiquidityAmounts(reserveAAfterSwap, reserveBAfterSwap, amountAAfterSwap, amountBAfterSwap);
+        if (quote.amountAUsed == 0 || quote.amountBUsed == 0) revert InsufficientLiquidityMinted();
+        uint256 totalSupply =
+            _quoteTotalSupplyAfterFeeMint(IUniswapV2Pair(pairAddress), reserveAAfterSwap, reserveBAfterSwap);
+        quote.liquidity = _quoteLiquidityMinted(
+            reserveAAfterSwap, reserveBAfterSwap, totalSupply, quote.amountAUsed, quote.amountBUsed
+        );
+        if (quote.liquidity == 0) revert InsufficientLiquidityMinted();
+        quote.reserveAAfter = reserveAAfterSwap + quote.amountAUsed;
+        quote.reserveBAfter = reserveBAfterSwap + quote.amountBUsed;
+    }
+
+    function _quoteZapNativePair(address token, uint256 amountTokenIn, uint256 amountNativeIn)
+        internal
+        view
+        returns (ZapNativeQuote memory quote)
+    {
+        ZapQuote memory pairQuote = _quoteZapPair(wrappedNativeToken, token, amountNativeIn, amountTokenIn);
+        quote.hasLiquidity = pairQuote.hasLiquidity;
+        quote.willSwap = pairQuote.willSwap;
+        quote.swapTokenIn = pairQuote.swapTokenIn;
+        quote.swapTokenOut = pairQuote.swapTokenOut;
+        quote.amountToSwap = pairQuote.amountToSwap;
+        quote.amountOutFromSwap = pairQuote.amountOutFromSwap;
+        quote.amountTokenUsed = pairQuote.amountBUsed;
+        quote.amountNativeUsed = pairQuote.amountAUsed;
+        quote.liquidity = pairQuote.liquidity;
+        quote.reserveTokenAfter = pairQuote.reserveBAfter;
+        quote.reserveNativeAfter = pairQuote.reserveAAfter;
     }
 
     function _swapExcess(
@@ -237,47 +381,93 @@ contract UniswapV2Zap is ReentrancyGuard {
         returns (uint256 amountToSwap)
     {
         if (reserveIn == 0 || reserveOut == 0) revert InsufficientLiquidity();
+        if (amountIn > UNISWAP_V2_MAX_RESERVE || amountOutAlready > UNISWAP_V2_MAX_RESERVE) revert AmountTooLarge();
         if (amountIn * reserveOut < reserveIn * amountOutAlready) revert InvalidRatio();
+        uint256 imbalance = amountIn * reserveOut - reserveIn * amountOutAlready;
+        return (
+            Math.sqrt(
+                reserveIn * reserveIn * 3_988_009
+                    + Math.mulDiv(reserveIn * 3_988_000, imbalance, reserveOut + amountOutAlready)
+            ) - reserveIn * 1_997
+        ) / 1_994;
+    }
 
-        uint256 left = 0;
-        uint256 right = amountIn;
-        uint256 tolerance = amountIn / 10000;
-        if (tolerance == 0) tolerance = 1;
+    function _getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
+        internal
+        pure
+        returns (uint256 amountOut)
+    {
+        if (amountIn == 0 || reserveIn == 0 || reserveOut == 0) return 0;
+        uint256 amountInWithFee = amountIn * 997;
+        return (amountInWithFee * reserveOut) / (reserveIn * 1000 + amountInWithFee);
+    }
 
-        uint256 reserveInTimes1000 = reserveIn * 1000;
-        uint256 reserveProductTimes1000 = reserveInTimes1000 * reserveOut;
-
-        while (left + tolerance < right) {
-            amountToSwap = (left + right) / 2;
-
-            uint256 newReserveIn = reserveIn + amountToSwap;
-            uint256 newReserveOut = reserveProductTimes1000 / (reserveInTimes1000 + 997 * amountToSwap);
-            uint256 newAmountIn = amountIn - amountToSwap;
-            uint256 newAmountOut = amountOutAlready + (reserveOut - newReserveOut);
-
-            if (newAmountIn * newReserveOut >= newReserveIn * newAmountOut) {
-                left = amountToSwap;
-            } else {
-                right = amountToSwap;
-            }
+    function _quoteLiquidityAmounts(uint256 reserveA, uint256 reserveB, uint256 amountADesired, uint256 amountBDesired)
+        internal
+        pure
+        returns (uint256 amountA, uint256 amountB)
+    {
+        uint256 amountBOptimal = (amountADesired * reserveB) / reserveA;
+        if (amountBOptimal <= amountBDesired) {
+            return (amountADesired, amountBOptimal);
         }
 
-        return left;
+        uint256 amountAOptimal = (amountBDesired * reserveA) / reserveB;
+        return (amountAOptimal, amountBDesired);
+    }
+
+    function _quoteLiquidityMinted(
+        uint256 reserveA,
+        uint256 reserveB,
+        uint256 totalSupply,
+        uint256 amountA,
+        uint256 amountB
+    ) internal pure returns (uint256 liquidity) {
+        if (totalSupply == 0) {
+            return Math.sqrt(amountA * amountB) - UNISWAP_V2_MINIMUM_LIQUIDITY;
+        }
+
+        liquidity = Math.min((amountA * totalSupply) / reserveA, (amountB * totalSupply) / reserveB);
+    }
+
+    function _quoteTotalSupplyAfterFeeMint(IUniswapV2Pair pair, uint256 reserveA, uint256 reserveB)
+        internal
+        view
+        returns (uint256 totalSupply)
+    {
+        totalSupply = pair.totalSupply();
+
+        if (IUniswapV2Factory(factory).feeTo() == address(0)) {
+            return totalSupply;
+        }
+
+        uint256 kLast = pair.kLast();
+        if (kLast == 0) {
+            return totalSupply;
+        }
+
+        uint256 rootK = Math.sqrt(reserveA * reserveB);
+        uint256 rootKLast = Math.sqrt(kLast);
+        if (rootK <= rootKLast) {
+            return totalSupply;
+        }
+
+        return totalSupply + (totalSupply * (rootK - rootKLast)) / (rootK * 5 + rootKLast);
     }
 
     function _reserves(address tokenA, address tokenB)
         internal
         view
-        returns (uint256 reserveA, uint256 reserveB, bool hasLiquidity)
+        returns (uint256 reserveA, uint256 reserveB, bool hasLiquidity, address pair)
     {
-        address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+        pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
         if (pair == address(0)) {
-            return (0, 0, false);
+            return (0, 0, false, address(0));
         }
 
         (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(pair).getReserves();
         if (reserve0 == 0 && reserve1 == 0) {
-            return (0, 0, false);
+            return (0, 0, false, pair);
         }
 
         address token0 = IUniswapV2Pair(pair).token0();
