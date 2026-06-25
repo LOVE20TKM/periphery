@@ -495,6 +495,100 @@ contract UniswapV2ZapTest is Test {
         assertEq(address(zap).balance, 0, "zap eth dust");
     }
 
+    function testZapTokenAllowsPriceMoveWithinSlippage() public {
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenA), address(tokenB), 100 ether, 0);
+        uint256 amountAMin = _minAfterSlippage(quote.amountAUsed, 500);
+        uint256 amountBMin = _minAfterSlippage(quote.amountBUsed, 500);
+        uint256 liquidityMin = _minAfterSlippage(quote.liquidity, 500);
+
+        _moveTokenPairPriceWithAIn(1 ether);
+        _mintAndApprove(100 ether, 0);
+
+        vm.prank(user);
+        (uint256 amountA, uint256 amountB, uint256 liquidity) = zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 100 ether,
+                amountBIn: 0,
+                amountAMin: amountAMin,
+                amountBMin: amountBMin,
+                liquidityMin: liquidityMin,
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+
+        assertGe(amountA, amountAMin, "amount A slippage");
+        assertGe(amountB, amountBMin, "amount B slippage");
+        assertGe(liquidity, liquidityMin, "liquidity slippage");
+        _assertNoZapTokenDust(tokenA, tokenB);
+    }
+
+    function testZapTokenRevertsWhenPriceMoveExceedsSlippage() public {
+        IUniswapV2Zap.ZapQuote memory quote = zap.quoteZapToken(address(tokenA), address(tokenB), 100 ether, 0);
+
+        _moveTokenPairPriceWithAIn(500 ether);
+        _mintAndApprove(100 ether, 0);
+
+        vm.expectRevert();
+        vm.prank(user);
+        zap.zapToken(
+            IUniswapV2Zap.ZapTokenParams({
+                tokenA: address(tokenA),
+                tokenB: address(tokenB),
+                amountAIn: 100 ether,
+                amountBIn: 0,
+                amountAMin: _minAfterSlippage(quote.amountAUsed, 100),
+                amountBMin: _minAfterSlippage(quote.amountBUsed, 100),
+                liquidityMin: _minAfterSlippage(quote.liquidity, 100),
+                to: recipient,
+                deadline: block.timestamp + 1
+            })
+        );
+    }
+
+    function testZapNativeTokenAllowsPriceMoveWithinSlippage() public {
+        IUniswapV2Zap.ZapNativeQuote memory quote = zap.quoteZapNativeToken(address(tokenA), 0, 10 ether);
+        uint256 amountTokenMin = _minAfterSlippage(quote.amountTokenUsed, 500);
+        uint256 amountNativeMin = _minAfterSlippage(quote.amountNativeUsed, 500);
+        uint256 liquidityMin = _minAfterSlippage(quote.liquidity, 500);
+
+        _moveNativePairPriceWithNativeIn(0.1 ether);
+        vm.deal(user, 100 ether);
+
+        vm.prank(user);
+        (uint256 amountToken, uint256 amountNative, uint256 liquidity) = zap.zapNativeToken{value: 10 ether}(
+            address(tokenA), 0, amountTokenMin, amountNativeMin, liquidityMin, recipient, block.timestamp + 1
+        );
+
+        assertGe(amountToken, amountTokenMin, "token slippage");
+        assertGe(amountNative, amountNativeMin, "native slippage");
+        assertGe(liquidity, liquidityMin, "liquidity slippage");
+        assertEq(tokenA.balanceOf(address(zap)), 0, "zap token dust");
+        assertEq(IERC20Like(weth).balanceOf(address(zap)), 0, "zap weth dust");
+        assertEq(address(zap).balance, 0, "zap eth dust");
+    }
+
+    function testZapNativeTokenRevertsWhenPriceMoveExceedsSlippage() public {
+        IUniswapV2Zap.ZapNativeQuote memory quote = zap.quoteZapNativeToken(address(tokenA), 0, 10 ether);
+
+        _moveNativePairPriceWithNativeIn(50 ether);
+        vm.deal(user, 100 ether);
+
+        vm.expectRevert();
+        vm.prank(user);
+        zap.zapNativeToken{value: 10 ether}(
+            address(tokenA),
+            0,
+            _minAfterSlippage(quote.amountTokenUsed, 100),
+            _minAfterSlippage(quote.amountNativeUsed, 100),
+            _minAfterSlippage(quote.liquidity, 100),
+            recipient,
+            block.timestamp + 1
+        );
+    }
+
     function testQuoteZapTokenMatchesZapResult() public {
         IUniswapV2Zap.ZapQuote memory quote = _assertQuoteMatchesZapResult(100 ether, 0);
 
@@ -1105,6 +1199,29 @@ contract UniswapV2ZapTest is Test {
     function _assertNoZapTokenDust(TestERC20 token0, TestERC20 token1) internal view {
         assertEq(token0.balanceOf(address(zap)), 0, "zap token0 dust");
         assertEq(token1.balanceOf(address(zap)), 0, "zap token1 dust");
+    }
+
+    function _moveTokenPairPriceWithAIn(uint256 amountAIn) internal {
+        tokenA.mint(address(this), amountAIn);
+        tokenA.approve(address(router), amountAIn);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenA);
+        path[1] = address(tokenB);
+        router.swapExactTokensForTokens(amountAIn, 0, path, address(this), block.timestamp + 1);
+    }
+
+    function _moveNativePairPriceWithNativeIn(uint256 amountNativeIn) internal {
+        vm.deal(address(this), amountNativeIn);
+
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = address(tokenA);
+        router.swapExactETHForTokens{value: amountNativeIn}(0, path, address(this), block.timestamp + 1);
+    }
+
+    function _minAfterSlippage(uint256 amount, uint256 bps) internal pure returns (uint256) {
+        return (amount * (10_000 - bps)) / 10_000;
     }
 
     function _assertUserTokenBalancesMatchQuote(
