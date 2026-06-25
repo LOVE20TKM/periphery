@@ -98,8 +98,3 @@ forge_script() {
   fi
 }
 echo "forge_script() loaded"
-
-# print success info
-echo -e "\033[32mSuccess:\033[0m Deployed on $network"
-
-# todo: check the deploy result
