@@ -30,3 +30,10 @@ check_equal "Hub: voteAddress" $voteAddress $(cast_call $love20HubAddress "voteA
 check_equal "Hub: joinAddress" $joinAddress $(cast_call $love20HubAddress "joinAddress()(address)")
 check_equal "Hub: verifyAddress" $verifyAddress $(cast_call $love20HubAddress "verifyAddress()(address)")
 check_equal "Hub: mintAddress" $mintAddress $(cast_call $love20HubAddress "mintAddress()(address)")
+
+check_equal "Router: factory" $uniswapV2FactoryAddress $(cast_call $uniswapV2Router02Address "factory()(address)")
+check_equal "Router: rootParentTokenAddress" $rootParentTokenAddress $(cast_call $uniswapV2Router02Address "WETH()(address)")
+
+check_equal "Zap: router" $uniswapV2Router02Address $(cast_call $uniswapV2ZapAddress "router()(address)")
+check_equal "Zap: factory" $uniswapV2FactoryAddress $(cast_call $uniswapV2ZapAddress "factory()(address)")
+check_equal "Zap: wrappedNativeToken" $rootParentTokenAddress $(cast_call $uniswapV2ZapAddress "wrappedNativeToken()(address)")
